@@ -1,3 +1,4 @@
+// Importar as bibliotecas React necessárias para o componente
 import React, { useState, useEffect } from 'react';
 
 // Componente principal da aplicação de login
