@@ -9,14 +9,18 @@ function App() {
   const [password, setPassword] = useState(''); // Estado para a password do formulário
   const [error, setError] = useState(''); // Estado para mensagens de erro
   const [user, setUser] = useState(''); // Estado para guardar o utilizador logado
+  const [userRole, setUserRole] = useState('normal'); // Estado para o tipo de utilizador
 
   // useEffect para verificar se o utilizador já está logado ao carregar a página
   useEffect(() => {
     // Verificar se existe utilizador guardado no localStorage
     const storedUser = localStorage.getItem('user');
+    const storedRole = localStorage.getItem('role');
     if (storedUser) {
       setIsLoggedIn(true);
       setUser(storedUser);
+      // Definir o tipo de utilizador
+      setUserRole(storedRole || 'normal');
     }
   }, []);
 
@@ -52,10 +56,11 @@ function App() {
       const data = await response.json(); // Obter resposta do servidor
 
       if (data.success) {
-        // Login bem sucedido
         setIsLoggedIn(true);
         setUser(data.user);
-        localStorage.setItem('user', data.user); // Guardar utilizador no localStorage
+        setUserRole(data.role || 'normal');
+        localStorage.setItem('user', data.user);
+        localStorage.setItem('role', data.role || 'normal');
       } else {
         // Login falhou - mostrar mensagem de erro do backend
         setError(data.message);
@@ -70,9 +75,11 @@ function App() {
   const handleLogout = () => {
     setIsLoggedIn(false); // Resetar estado de login
     setUser(''); // Limpar utilizador
+    setUserRole('normal'); // Resetar tipo de utilizador
     setEmail(''); // Limpar email do formulário
     setPassword(''); // Limpar password do formulário
     localStorage.removeItem('user'); // Remover utilizador do localStorage
+    localStorage.removeItem('role'); // Remover tipo de utilizador
   };
 
   // Se o utilizador estiver logado, mostrar página de sucesso
@@ -82,6 +89,7 @@ function App() {
         <h1>Bem vindo!</h1>
         <p>Conseguiste fazer login com sucesso!</p>
         <p>Olá {user}!</p>
+        <p>Tipo de utilizador: {userRole}</p>
         <button onClick={handleLogout} style={{ padding: '10px 20px', marginTop: '20px' }}>
           Logout
         </button>
