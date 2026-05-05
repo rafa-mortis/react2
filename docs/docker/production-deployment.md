@@ -1,35 +1,33 @@
-# Production Docker Deployment
+# Deploy Docker de Produção
 
-This document describes how to deploy the React Login Application to production using Docker.
+## Propósito
 
-## 🎯 Purpose
+Deploy de produção proporciona:
+- Deploy escalável e fiável
+- Alta disponibilidade e tolerância a falhas
+- Otimização de segurança e performance
+- Capacidades de monitorização e logging
 
-Production deployment provides:
-- Scalable and reliable deployment
-- High availability and fault tolerance
-- Security and performance optimization
-- Monitoring and logging capabilities
+## Pré-requisitos
 
-## 📋 Prerequisites
+# Requisitos de Infraestrutura
 
-### Infrastructure Requirements
+- **Docker Engine**: Versão 20.10 ou posterior
+- **Docker Compose**: Versão 2.0 ou posterior
+- **Load Balancer**: Nginx, HAProxy, ou cloud load balancer
+- **Certificado SSL**: Para terminação HTTPS
+- **Monitorização**: Prometheus, Grafana, ou cloud monitoring
 
-- **Docker Engine**: Version 20.10 or later
-- **Docker Compose**: Version 2.0 or later
-- **Load Balancer**: Nginx, HAProxy, or cloud load balancer
-- **SSL Certificate**: For HTTPS termination
-- **Monitoring**: Prometheus, Grafana, or cloud monitoring
+# Requisitos de Sistema
 
-### System Requirements
+- **CPU**: Mínimo 4 cores, recomendado 8 cores
+- **RAM**: Mínimo 8GB, recomendado 16GB
+- **Armazenamento**: Mínimo 50GB SSD, recomendado 100GB
+- **Rede**: Ligação 1Gbps, redundante se possível
 
-- **CPU**: Minimum 4 cores, recommended 8 cores
-- **RAM**: Minimum 8GB, recommended 16GB
-- **Storage**: Minimum 50GB SSD, recommended 100GB
-- **Network**: 1Gbps connection, redundant if possible
+# Arquitetura de Deploy
 
-## 🚀 Deployment Architecture
-
-### Production Architecture
+## Arquitetura de Produção
 
 ```
 Internet
@@ -45,7 +43,7 @@ Backend (Flask)
 Database (PostgreSQL)
 ```
 
-### Docker Compose Production
+## Docker Compose Produção
 
 ```yaml
 version: '3.8'
@@ -121,37 +119,37 @@ volumes:
   postgres_data:
 ```
 
-## 🔧 Configuration
+# Configuração
 
-### Environment Variables
+## Variáveis de Ambiente
 
-#### Production Environment (.env.production)
+### Ambiente de Produção (.env.production)
 ```bash
-# Application Configuration
+# Configuração da Aplicação
 VERSION=latest
 NODE_ENV=production
 FLASK_ENV=production
 
-# Database Configuration
+# Configuração da Base de Dados
 DATABASE_URL=postgresql://appuser:password@db:5432/appdb
 DB_PASSWORD=your-secure-db-password
 
-# Security Configuration
+# Configuração de Segurança
 SECRET_KEY=your-super-secret-key-here
 JWT_SECRET_KEY=your-jwt-secret-key-here
 
-# SSL Configuration
+# Configuração SSL
 SSL_CERT_PATH=/etc/nginx/ssl/cert.pem
 SSL_KEY_PATH=/etc/nginx/ssl/key.pem
 
-# Monitoring Configuration
+# Configuração de Monitorização
 SENTRY_DSN=your-sentry-dsn-here
 LOG_LEVEL=INFO
 ```
 
-### Nginx Configuration
+# Configuração Nginx
 
-#### nginx/nginx.conf
+## nginx/nginx.conf
 ```nginx
 events {
     worker_connections 1024;
@@ -204,7 +202,7 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # Login endpoint with stricter rate limiting
+        # Login endpoint com rate limiting mais restrito
         location /api/login {
             limit_req zone=login burst=10 nodelay;
             proxy_pass http://backend/login;
@@ -217,90 +215,90 @@ http {
 }
 ```
 
-## 🚀 Deployment Process
+# Processo de Deploy
 
-### 1. Preparation
+## Preparação
 
-#### Update Docker Images
+### Atualizar Imagens Docker
 ```bash
-# Pull latest images
+# Pull imagens mais recentes
 docker-compose -f docker-compose.prod.yml pull
 
-# Or build specific version
+# Ou build versão específica
 docker-compose -f docker-compose.prod.yml build
 ```
 
-#### Database Migration
+### Migração da Base de Dados
 ```bash
-# Run database migrations
+# Executar migrações da base de dados
 docker-compose -f docker-compose.prod.yml run --rm backend flask db upgrade
 
-# Create initial data if needed
+# Criar dados iniciais se necessário
 docker-compose -f docker-compose.prod.yml run --rm backend python scripts/init_data.py
 ```
 
-### 2. Deployment
+## Deploy
 
-#### Deploy Application
+### Deploy da Aplicação
 ```bash
-# Deploy to production
+# Deploy para produção
 docker-compose -f docker-compose.prod.yml up -d
 
-# Check service status
+# Verificar status dos serviços
 docker-compose -f docker-compose.prod.yml ps
 
-# View logs
+# Ver logs
 docker-compose -f docker-compose.prod.yml logs -f
 ```
 
-#### Health Checks
+### Verificações de Saúde
 ```bash
-# Check application health
+# Verificar saúde da aplicação
 curl https://yourdomain.com/api/health
 
-# Check database connectivity
+# Verificar conectividade da base de dados
 docker-compose -f docker-compose.prod.yml exec backend python -c "from database import engine; print(engine.execute('SELECT 1').scalar())"
 ```
 
-### 3. Post-Deployment
+## Pós-Deploy
 
-#### Verification
+### Verificação
 ```bash
-# Test login functionality
+# Testar funcionalidade de login
 curl -X POST https://yourdomain.com/api/login \
   -H "Content-Type: application/json" \
   -d '{"email": "test@example.com", "password": "testpass"}'
 
-# Check SSL certificate
+# Verificar certificado SSL
 openssl s_client -connect yourdomain.com:443 -servername yourdomain.com
 ```
 
-#### Monitoring Setup
+### Configuração de Monitorização
 ```bash
-# Set up monitoring
+# Configurar monitorização
 docker-compose -f docker-compose.monitoring.yml up -d
 
-# Check metrics
+# Verificar métricas
 curl http://localhost:9090/metrics
 ```
 
-## 📊 Monitoring and Logging
+# Monitorização e Logging
 
-### Application Monitoring
+## Monitorização da Aplicação
 
-#### Health Checks
+### Verificações de Saúde
 ```bash
-# Application health
+# Saúde da aplicação
 curl https://yourdomain.com/api/health
 
-# Database health
+# Saúde da base de dados
 docker-compose exec db pg_isready -U appuser -d appdb
 
-# Redis health
+# Saúde do Redis
 docker-compose exec redis redis-cli ping
 ```
 
-#### Metrics Collection
+### Coleção de Métricas
 ```yaml
 # prometheus.yml
 global:
@@ -313,174 +311,108 @@ scrape_configs:
     metrics_path: '/metrics'
 ```
 
-### Logging
+## Logging
 
-#### Application Logs
+### Logs da Aplicação
 ```bash
-# View application logs
+# Ver logs da aplicação
 docker-compose logs -f backend
 docker-compose logs -f frontend
 
-# View nginx logs
+# Ver logs nginx
 docker-compose logs -f nginx
 
-# View database logs
+# Ver logs da base de dados
 docker-compose logs -f db
 ```
 
-#### Log Aggregation
-```yaml
-# docker-compose.logging.yml
-version: '3.8'
+# Segurança
 
-services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
-    environment:
-      - discovery.type=single-node
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
+## Segurança de Contentores
 
-  logstash:
-    image: docker.elastic.co/logstash/logstash:7.14.0
-    volumes:
-      - ./logstash/pipeline:/usr/share/logstash/pipeline
-    depends_on:
-      - elasticsearch
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.14.0
-    ports:
-      - "5601:5601"
-    depends_on:
-      - elasticsearch
-
-volumes:
-  elasticsearch_data:
-```
-
-## 🛡️ Security
-
-### Container Security
-
-#### Security Scanning
+### Scanning de Segurança
 ```bash
-# Scan images for vulnerabilities
+# Scannear imagens para vulnerabilidades
 docker scan ${DOCKER_USERNAME}/react-login-frontend:${VERSION}
 docker scan ${DOCKER_USERNAME}/react-login-backend:${VERSION}
 ```
 
-#### Runtime Security
-```yaml
-# Security limits in docker-compose.prod.yml
-services:
-  backend:
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp
-    user: "1000:1000"
-```
+## Segurança de Rede
 
-### Network Security
-
-#### Firewall Configuration
+### Configuração de Firewall
 ```bash
-# Allow only necessary ports
+# Permitir apenas portas necessárias
 ufw allow 22/tcp    # SSH
 ufw allow 80/tcp    # HTTP
 ufw allow 443/tcp   # HTTPS
 ufw enable
 ```
 
-#### SSL Configuration
+### Configuração SSL
 ```bash
-# Generate SSL certificate
+# Gerar certificado SSL
 certbot --nginx -d yourdomain.com
 
-# Auto-renewal
+# Renovação automática
 echo "0 12 * * * /usr/bin/certbot renew --quiet" | crontab -
 ```
 
-## 🚨 Troubleshooting
+# Troubleshooting
 
-### Common Issues
+## Issues Comuns
 
-#### 1. Container Startup Issues
+### 1. Issues de Inicialização de Contentores
 ```bash
-# Check container logs
+# Ver logs dos contentores
 docker-compose logs backend
 
-# Check container status
+# Ver status dos contentores
 docker-compose ps
 
-# Restart services
+# Reiniciar serviços
 docker-compose restart backend
 ```
 
-#### 2. Database Connection Issues
+### 2. Issues de Conexão da Base de Dados
 ```bash
-# Check database connectivity
+# Verificar conectividade da base de dados
 docker-compose exec db pg_isready -U appuser -d appdb
 
-# Check database logs
+# Ver logs da base de dados
 docker-compose logs db
 
-# Reset database connection
+# Reiniciar conexão da base de dados
 docker-compose restart db
 ```
 
-#### 3. SSL Certificate Issues
+### 3. Issues de Certificado SSL
 ```bash
-# Check SSL certificate
+# Verificar certificado SSL
 openssl x509 -in /etc/nginx/ssl/cert.pem -text -noout
 
-# Check certificate expiration
+# Verificar expiração do certificado
 openssl x509 -in /etc/nginx/ssl/cert.pem -noout -dates
 
-# Renew certificate
+# Renovar certificado
 certbot renew
 ```
 
-#### 4. Performance Issues
-```bash
-# Check resource usage
-docker stats
+# Boas Práticas
 
-# Check application response time
-curl -w "@curl-format.txt" -o /dev/null -s https://yourdomain.com/api/health
+## Práticas de Deploy
 
-# Analyze slow queries
-docker-compose exec db psql -U appuser -d appdb -c "SELECT query, mean_time, calls FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;"
-```
+1. **Blue-Green Deployment**: Deploys sem downtime
+2. **Estratégia de Rollback**: Ter sempre procedimentos de rollback
+3. **Verificações de Saúde**: Monitorização de saúde abrangente
+4. **Limites de Recursos**: Definir limites de recursos adequados
+5. **Estratégia de Backup**: Backups regulares e testes
 
-## 📚 Best Practices
+## Práticas de Segurança
 
-### Deployment Practices
-
-1. **Blue-Green Deployment**: Zero-downtime deployments
-2. **Rollback Strategy**: Always have rollback procedures
-3. **Health Checks**: Comprehensive health monitoring
-4. **Resource Limits**: Set appropriate resource limits
-5. **Backup Strategy**: Regular backups and testing
-
-### Security Practices
-
-1. **Least Privilege**: Minimal permissions and access
-2. **Secret Management**: Use secret management tools
-3. **Network Isolation**: Proper network segmentation
-4. **Regular Updates**: Keep dependencies updated
-5. **Security Scanning**: Regular vulnerability scans
-
-### Performance Practices
-
-1. **Caching**: Implement appropriate caching
-2. **Load Balancing**: Distribute traffic effectively
-3. **Resource Optimization**: Optimize resource usage
-4. **Monitoring**: Comprehensive performance monitoring
-5. **Capacity Planning**: Plan for growth
+1. **Privilégio Mínimo**: Permissões e acesso mínimos
+2. **Gestão de Secrets**: Usar ferramentas de gestão de secrets
+3. **Isolamento de Rede**: Segmentação de rede adequada
+4. **Atualizações Regulares**: Manter dependências atualizadas
+5. **Scanning de Segurança**: Scans de vulnerabilidade regulares
 
 ---
-
-*For local development setup, see [local-development.md](local-development.md).*

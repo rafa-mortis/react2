@@ -250,177 +250,6 @@ class ErrorLogger {
         message: event.message,
         filename: event.filename,
         lineno: event.lineno,
-        colno: event.colno,
-        stack: event.error?.stack,
-      });
-    });
-
-    // Unhandled promise rejection handler
-    window.addEventListener('unhandledrejection', (event) => {
-      this.logError({
-        type: 'unhandled_promise_rejection',
-        message: event.reason?.message || event.reason,
-        stack: event.reason?.stack,
-      });
-    });
-  }
-
-  static logError(error) {
-    const errorData = {
-      ...error,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-    };
-
-    // Send to backend
-    fetch('/api/errors', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(errorData),
-    }).catch(console.error);
-  }
-
-  static logUserAction(action, data = {}) {
-    const actionData = {
-      type: 'user_action',
-      action,
-      data,
-      timestamp: new Date().toISOString(),
-      url: window.location.href,
-    };
-
-    fetch('/api/user-actions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(actionData),
-    }).catch(console.error);
-  }
-}
-
-export default ErrorLogger;
-```
-
-## 📈 Visualization
-
-### 1. Grafana Dashboards
-
-#### Application Dashboard
-```json
-{
-  "dashboard": {
-    "title": "React Application Dashboard",
-    "panels": [
-      {
-        "title": "Request Rate",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(http_requests_total[5m])",
-            "legendFormat": "{{method}} {{endpoint}}"
-          }
-        ]
-      },
-      {
-        "title": "Response Time",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
-            "legendFormat": "95th percentile"
-          },
-          {
-            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))",
-            "legendFormat": "50th percentile"
-          }
-        ]
-      },
-      {
-        "title": "Error Rate",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(http_requests_total{status=~\"5..\"}[5m])",
-            "legendFormat": "5xx errors"
-          }
-        ]
-      },
-      {
-        "title": "Database Connections",
-        "type": "singlestat",
-        "targets": [
-          {
-            "expr": "pg_stat_activity_count"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-#### System Dashboard
-```json
-{
-  "dashboard": {
-    "title": "System Resources Dashboard",
-    "panels": [
-      {
-        "title": "CPU Usage",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
-            "legendFormat": "{{instance}}"
-          }
-        ]
-      },
-      {
-        "title": "Memory Usage",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
-            "legendFormat": "{{instance}}"
-          }
-        ]
-      },
-      {
-        "title": "Disk Usage",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "(1 - (node_filesystem_free_bytes / node_filesystem_size_bytes)) * 100",
-            "legendFormat": "{{instance}} {{mountpoint}}"
-          }
-        ]
-      },
-      {
-        "title": "Network Traffic",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(node_network_receive_bytes_total[5m])",
-            "legendFormat": "RX {{instance}}"
-          },
-          {
-            "expr": "rate(node_network_transmit_bytes_total[5m])",
-            "legendFormat": "TX {{instance}}"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### 2. Alerting Setup
-
-#### Alertmanager Configuration
 ```yaml
 # alertmanager.yml
 global:
@@ -433,48 +262,95 @@ route:
   group_interval: 10s
   repeat_interval: 1h
   receiver: 'web.hook'
-  routes:
-    - match:
-        severity: critical
-      receiver: 'critical-alerts'
-    - match:
-        severity: warning
-      receiver: 'warning-alerts'
 
 receivers:
   - name: 'web.hook'
-    webhook_configs:
-      - url: 'http://localhost:5001/webhook'
-
-  - name: 'critical-alerts'
     email_configs:
-      - to: 'oncall@yourdomain.com'
-        subject: '[CRITICAL] {{ .GroupLabels.alertname }}'
+      - to: 'admin@yourdomain.com'
+        subject: '[Alert] {{ .GroupLabels.alertname }}'
         body: |
           {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
           {{ end }}
+    
     slack_configs:
-      - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
         channel: '#alerts'
-        title: 'Critical Alert'
+        title: 'Application Alert'
         text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-
-  - name: 'warning-alerts'
-    email_configs:
-      - to: 'team@yourdomain.com'
-        subject: '[WARNING] {{ .GroupLabels.alertname }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          {{ end }}
 ```
 
-## 🔧 Monitoring Stack Deployment
+# Dashboards
 
-### Docker Compose Monitoring
+## 1. Dashboard da Aplicação
+
+### Métricas Chave
+- Taxa de pedidos
+- Taxa de erros
+- Percentis de tempo de resposta
+- Utilizadores ativos
+
+### Configuração Dashboard Grafana
+```json
+{
+  "dashboard": {
+    "title": "React Login Application",
+    "panels": [
+      {
+        "title": "Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ]
+      },
+      {
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"5..\"}[5m])",
+            "legendFormat": "5xx Errors"
+          }
+        ]
+      },
+      {
+        "title": "Response Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## 2. Dashboard de Infraestrutura
+
+### Métricas do Sistema
+- Uso de CPU
+- Uso de memória
+- Uso de disco
+- I/O de rede
+
+### Dashboard da Base de Dados
+- Performance de queries
+- Contagem de conexões
+- Tamanho da base de dados
+- Eficiência de índices
+
+# Configuração
+
+## 1. Docker Compose Monitorização
+
+### Stack Completa de Monitorização
 ```yaml
 # docker-compose.monitoring.yml
 version: '3.8'
@@ -485,16 +361,26 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
+      - '--storage.tsdb.retention.time=15d'
       - '--web.enable-lifecycle'
+    depends_on:
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
 
   grafana:
     image: grafana/grafana:latest
@@ -504,16 +390,9 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
-
-  alertmanager:
-    image: prom/alertmanager:latest
-    ports:
-      - "9093:9093"
-    volumes:
-      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
-      - alertmanager_data:/alertmanager
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -523,18 +402,13 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
 
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
+    environment:
+      - DATA_SOURCE_NAME=postgresql://user:password@db:5432/appdb
     ports:
       - "9187:9187"
-    environment:
-      - DATA_SOURCE_NAME=postgresql://postgres:password@db:5432/postgres?sslmode=disable
     depends_on:
       - db
 
@@ -542,168 +416,105 @@ services:
     image: nginx/nginx-prometheus-exporter:latest
     ports:
       - "9113:9113"
-    command:
-      - '-nginx.scrape-uri=http://nginx:8080/stub_status'
+    depends_on:
+      - nginx
 
 volumes:
   prometheus_data:
-  grafana_data:
   alertmanager_data:
+  grafana_data:
 ```
 
-## 📊 Health Checks
+# Métricas de Performance
 
-### Application Health
-```python
-# backend/health.py
-from flask import Blueprint, jsonify
-from database import get_db
-import redis
-import time
+## 1. Performance da Aplicação
 
-health_bp = Blueprint('health', __name__)
+### Indicadores Chave de Performance (KPIs)
+| Métrica | Alvo | Medição |
+|---------|------|---------|
+| Tempo de Resposta (95º percentil) | < 500ms | Duração de pedido HTTP |
+| Taxa de Erro | < 1% | Respostas HTTP 5xx |
+| Throughput | > 100 req/s | Pedidos por segundo |
+| Disponibilidade | > 99.9% | Percentagem de uptime |
 
-@health_bp.route('/health')
-def health_check():
-    checks = {
-        'status': 'healthy',
-        'timestamp': time.time(),
-        'checks': {}
-    }
-    
-    # Database health check
-    try:
-        db = next(get_db())
-        db.execute('SELECT 1')
-        checks['checks']['database'] = 'healthy'
-    except Exception as e:
-        checks['checks']['database'] = f'unhealthy: {str(e)}'
-        checks['status'] = 'unhealthy'
-    
-    # Redis health check
-    try:
-        r = redis.Redis(host='redis', port=6379, db=0)
-        r.ping()
-        checks['checks']['redis'] = 'healthy'
-    except Exception as e:
-        checks['checks']['redis'] = f'unhealthy: {str(e)}'
-        checks['status'] = 'unhealthy'
-    
-    status_code = 200 if checks['status'] == 'healthy' else 503
-    return jsonify(checks), status_code
-
-@health_bp.route('/ready')
-def readiness_check():
-    # Check if application is ready to serve traffic
-    return jsonify({'status': 'ready'}), 200
-
-@health_bp.route('/live')
-def liveness_check():
-    # Check if application is alive
-    return jsonify({'status': 'alive'}), 200
+### Limiares de Performance
+```yaml
+# Limiares de performance
+performance_thresholds:
+  response_time_p95: 500ms
+  response_time_p99: 1000ms
+  error_rate: 1%
+  throughput: 100 req/s
+  availability: 99.9%
 ```
 
-## 🚨 Incident Response
+## 2. Métricas de Infraestrutura
 
-### 1. Alert Triage
+### Utilização de Recursos
+| Métrica | Aviso | Crítico | Medição |
+|---------|--------|----------|---------|
+| Uso de CPU | 80% | 95% | Percentagem de CPU do sistema |
+| Uso de Memória | 85% | 95% | Percentagem de memória do sistema |
+| Uso de Disco | 85% | 95% | Percentagem de espaço em disco |
+| I/O de Rede | 80% | 95% | Uso de largura de banda de rede |
 
-#### Severity Levels
-- **Critical**: Service down, data loss, security breach
-- **Warning**: Performance degradation, high error rates
-- **Info**: Informational, scheduled maintenance
+# Manutenção
 
-#### Response Procedures
+## 1. Manutenção da Monitorização
+
+### Tarefas Regulares
 ```bash
-#!/bin/bash
-# scripts/incident-response.sh
+# Verificar saúde do sistema de monitorização
+curl http://localhost:9090/-/healthy
 
-ALERT_TYPE=$1
-SEVERITY=$2
+# Backup de dados Prometheus
+docker exec prometheus tar czf /backup/prometheus-$(date +%Y%m%d).tar.gz /prometheus
 
-case $ALERT_TYPE in
-  "high_error_rate")
-    echo "High error rate detected - Severity: $SEVERITY"
-    # Check application logs
-    docker-compose logs -f backend | grep ERROR
-    # Check system resources
-    docker stats
-    # Restart services if needed
-    docker-compose restart backend
-    ;;
-  "high_response_time")
-    echo "High response time detected - Severity: $SEVERITY"
-    # Check database performance
-    docker-compose exec db psql -U postgres -c "SELECT * FROM pg_stat_activity;"
-    # Check application performance
-    curl -w "@curl-format.txt" -o /dev/null -s http://localhost:5000/health
-    ;;
-  "database_connections_high")
-    echo "High database connections - Severity: $SEVERITY"
-    # Check active connections
-    docker-compose exec db psql -U postgres -c "SELECT count(*) FROM pg_stat_activity;"
-    # Kill long-running queries
-    docker-compose exec db psql -U postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'active' AND query_start < now() - interval '5 minutes';"
-    ;;
-esac
+# Limpar métricas antigas
+docker exec prometheus promtool tsdb delete --start=$(date -d '30 days ago' --iso-8601) /prometheus
 ```
 
-### 2. Post-Incident Analysis
+# Resposta a Incidentes
 
-#### Incident Report Template
-```markdown
-# Incident Report
+## 1. Triagem de Alertas
 
-## Summary
-- **Incident ID**: INC-001
-- **Date**: [Date]
-- **Duration**: [Start time] - [End time]
-- **Impact**: [Description of impact]
-- **Severity**: [Critical/Warning/Info]
+### Priorização de Alertas
+1. **Crítico**: Serviço em baixo, perda de dados, breach de segurança
+2. **Alto**: Degradação de performance, interrupção parcial
+3. **Médio**: Avisos de recursos, issues não críticos
+4. **Baixo**: Alertas informativos, avisos de manutenção
 
-## Timeline
-- [Time]: [Event description]
-- [Time]: [Action taken]
-- [Time]: [Resolution]
+### Procedimentos de Resposta
+```bash
+# Verificar status do serviço
+docker-compose ps
 
-## Root Cause
-[Analysis of what caused the incident]
+# Verificar logs recentes
+docker-compose logs --since=1h backend
 
-## Resolution
-[Steps taken to resolve the incident]
+# Verificar recursos do sistema
+docker stats
 
-## Prevention
-[Measures to prevent recurrence]
-
-## Lessons Learned
-[Key takeaways and improvements]
+# Verificar conectividade de rede
+curl -f http://localhost:5000/health
 ```
 
-## 📚 Best Practices
+# Boas Práticas
 
-### 1. Monitoring Strategy
+## 1. Estratégia de Monitorização
 
-1. **Golden Signals**: Monitor latency, traffic, errors, saturation
-2. **SLI/SLO**: Define service level indicators and objectives
-3. **Redundancy**: Multiple monitoring systems
-4. **Automation**: Automated alerting and response
-5. **Documentation**: Comprehensive monitoring documentation
+1. **Cobertura Abrangente**: Monitorizar todos os componentes críticos
+2. **Métricas Significativas**: Rastrear métricas que importam
+3. **Alertas Acionáveis**: Criar alertas que requerem ação
+4. **Revisão Regular**: Rever e atualizar monitorização regularmente
+5. **Documentação**: Documentar todos os procedimentos de monitorização
 
-### 2. Alert Management
+## 2. Gestão de Alertas
 
-1. **Meaningful Alerts**: Actionable and relevant alerts
-2. **Alert Fatigue**: Avoid unnecessary alerts
-3. **Escalation**: Proper escalation procedures
-4. **Documentation**: Document alert procedures
-5. **Review**: Regular alert review and optimization
-
-### 3. Performance Monitoring
-
-1. **Real User Monitoring**: Track actual user experience
-2. **Synthetic Monitoring**: Proactive performance testing
-3. **Database Monitoring**: Database performance metrics
-4. **Infrastructure Monitoring**: System resource monitoring
-5. **Application Monitoring**: Application-specific metrics
+1. **Ajuste de Limiares**: Definir limiares de alerta adequados
+2. **Fadiga de Alertas**: Evitar muitos falsos positivos
+3. **Caminhos de Escalação**: Definir procedimentos claros de escalação
+4. **Testes**: Testar sistemas de alerta regularmente
+5. **Documentação**: Documentar procedimentos de alerta
 
 ---
-
-*For rollback procedures, see [rollback.md](rollback.md).*

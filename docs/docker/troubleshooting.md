@@ -1,192 +1,190 @@
-# Docker Troubleshooting
+# Troubleshooting Docker
 
-This document provides common Docker issues and their solutions for the React Login Application.
+## Propósito
 
-## 🎯 Purpose
+Este guia ajuda a resolver:
+- Issues de build e runtime do Docker
+- Problemas de networking e conectividade
+- Issues de performance e recursos
+- Problemas de segurança e permissões
 
-This troubleshooting guide helps resolve:
-- Docker build and runtime issues
-- Networking and connectivity problems
-- Performance and resource issues
-- Security and permission problems
+# Issues Comuns
 
-## 🚨 Common Issues
+## 1. Issues de Build
 
-### 1. Build Issues
-
-#### Docker Build Fails
+### Docker Build Falha
 ```bash
-# Error: Build failed
-# Solution: Check Dockerfile syntax and build context
+# Erro: Build falhou
+# Solução: Verificar sintaxe do Dockerfile e contexto de build
 docker build -t test-image ./backend
 
-# Clear build cache
+# Limpar cache de build
 docker builder prune -a
 
-# Rebuild without cache
+# Rebuild sem cache
 docker-compose build --no-cache
 ```
 
-#### Out of Space During Build
+### Sem Espaço Durante o Build
 ```bash
-# Error: No space left on device
-# Solution: Clean up Docker resources
+# Erro: Sem espaço no dispositivo
+# Solução: Limpar recursos Docker
 docker system prune -a
 
-# Check disk usage
+# Verificar uso de disco
 docker system df
 
-# Remove unused images
+# Remover imagens não usadas
 docker image prune -a
 ```
 
-#### Permission Denied During Build
+### Permissão Negada Durante o Build
 ```bash
-# Error: Permission denied
-# Solution: Check file permissions
+# Erro: Permissão negada
+# Solução: Verificar permissões de ficheiros
 sudo chown -R $USER:$USER .
 
-# Check Docker daemon permissions
+# Verificar permissões do daemon Docker
 sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-### 2. Runtime Issues
+## 2. Issues de Runtime
 
-#### Container Won't Start
+### Contentor Não Inicia
 ```bash
-# Check container status
+# Verificar status do contentor
 docker-compose ps
 
-# View container logs
+# Ver logs do contentor
 docker-compose logs backend
 
-# Check for port conflicts
+# Verificar conflitos de porta
 netstat -tulpn | grep :5000
 
-# Kill conflicting processes
+# Matar processos conflituantes
 sudo kill -9 <PID>
 ```
 
-#### Container Crashes Immediately
+### Contentor Cai Imediatamente
 ```bash
-# View detailed logs
+# Ver logs detalhados
 docker-compose logs -f backend
 
-# Run container in foreground
+# Executar contentor em primeiro plano
 docker-compose run --rm backend bash
 
-# Check configuration
+# Verificar configuração
 docker-compose config
 ```
 
-#### Health Check Failures
+### Falhas de Health Check
 ```bash
-# Check health status
+# Verificar status de saúde
 docker-compose ps
 
-# Test health check manually
+# Testar health check manualmente
 docker-compose exec backend curl -f http://localhost:5000/health
 
-# Adjust health check configuration
-# Edit docker-compose.yml healthcheck section
+# Ajustar configuração de health check
+# Editar secão healthcheck do docker-compose.yml
 ```
 
-### 3. Networking Issues
+## 3. Issues de Networking
 
-#### Container Cannot Reach Other Containers
+### Contentor Não Alcança Outros Contentores
 ```bash
-# Check network configuration
+# Verificar configuração de rede
 docker network ls
 
-# Test connectivity
+# Testar conectividade
 docker-compose exec frontend ping backend
 
-# Check DNS resolution
+# Verificar resolução DNS
 docker-compose exec frontend nslookup backend
 
-# Recreate network
+# Recriar rede
 docker network prune
 docker-compose up -d
 ```
 
-#### External Network Access Issues
+### Issues de Acesso à Rede Externa
 ```bash
-# Test external connectivity
+# Testar conectividade externa
 docker-compose exec backend ping google.com
 
-# Check DNS settings
+# Verificar configurações DNS
 docker-compose exec backend cat /etc/resolv.conf
 
-# Configure DNS in docker-compose.yml
+# Configurar DNS no docker-compose.yml
 dns:
   - 8.8.8.8
   - 8.8.4.4
 ```
 
-#### Port Mapping Issues
+### Issues de Mapeamento de Portas
 ```bash
-# Check port bindings
+# Verificar bindings de porta
 docker port <container_name>
 
-# Test port accessibility
+# Testar acessibilidade da porta
 telnet localhost 5000
 
-# Check firewall settings
+# Verificar configurações de firewall
 sudo ufw status
 ```
 
-### 4. Volume Issues
+## 4. Issues de Volume
 
-#### Volume Mount Fails
+### Falha de Montagem de Volume
 ```bash
-# Check volume mounts
+# Verificar montagens de volume
 docker-compose config
 
-# Verify file permissions
+# Verificar permissões de ficheiros
 ls -la ./backend
 
-# Fix permissions
+# Corrigir permissões
 sudo chown -R $USER:$USER ./backend
 
-# Check volume existence
+# Verificar existência de volume
 docker volume ls
 ```
 
-#### Data Persistence Issues
+### Issues de Persistência de Dados
 ```bash
-# Check volume contents
+# Verificar conteúdo do volume
 docker-compose exec db ls -la /var/lib/postgresql/data
 
-# Backup volume data
+# Backup de dados do volume
 docker run --rm -v postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup.tar.gz -C /data .
 
-# Restore volume data
+# Restaurar dados do volume
 docker run --rm -v postgres_data:/data -v $(pwd):/backup alpine tar xzf /backup/postgres_backup.tar.gz -C /data
 ```
 
-### 5. Performance Issues
+## 5. Issues de Performance
 
-#### Slow Container Startup
+### Inicialização Lenta de Contentor
 ```bash
-# Check image size
+# Verificar tamanho da imagem
 docker images
 
-# Optimize Dockerfile
-# Use multi-stage builds
-# Minimize layers
+# Otimizar Dockerfile
+# Usar builds multi-stage
+# Minimizar layers
 
-# Check resource usage
+# Verificar uso de recursos
 docker stats
 ```
 
-#### High Memory Usage
+### Alto Uso de Memória
 ```bash
-# Monitor memory usage
+# Monitorizar uso de memória
 docker stats --no-stream
 
-# Set memory limits
-# In docker-compose.yml:
+# Definir limites de memória
+# No docker-compose.yml:
 deploy:
   resources:
     limits:
@@ -195,13 +193,13 @@ deploy:
       memory: 256M
 ```
 
-#### High CPU Usage
+### Alto Uso de CPU
 ```bash
-# Monitor CPU usage
+# Monitorizar uso de CPU
 docker stats --no-stream
 
-# Set CPU limits
-# In docker-compose.yml:
+# Definir limites de CPU
+# No docker-compose.yml:
 deploy:
   resources:
     limits:
@@ -210,334 +208,129 @@ deploy:
       cpus: '0.25'
 ```
 
-## 🔧 Debugging Tools
+# Ferramentas de Debugging
 
-### 1. Container Inspection
+## 1. Inspeção de Contentores
 
-#### Container Information
+### Informações do Contentor
 ```bash
-# Get container details
+# Obter detalhes do contentor
 docker inspect <container_name>
 
-# Check container processes
+# Verificar processos do contentor
 docker-compose exec backend ps aux
 
-# Check environment variables
+# Verificar variáveis de ambiente
 docker-compose exec backend env
 
-# Check exposed ports
+# Verificar portas expostas
 docker-compose exec backend netstat -tulpn
 ```
 
-#### File System Inspection
+### Inspeção do Sistema de Ficheiros
 ```bash
-# Browse container file system
+# Navegar pelo sistema de ficheiros do contentor
 docker-compose exec backend ls -la /
 
-# Copy files from container
+# Copiar ficheiros do contentor
 docker cp <container_name>:/app/app.py ./app.py
 
-# Copy files to container
+# Copiar ficheiros para o contentor
 docker cp ./app.py <container_name>:/app/app.py
 ```
 
-### 2. Network Debugging
+## 2. Debugging de Rede
 
-#### Network Analysis
+### Análise de Rede
 ```bash
-# List networks
+# Listar redes
 docker network ls
 
-# Inspect network
+# Inspecionar rede
 docker network inspect <network_name>
 
-# Test connectivity
+# Testar conectividade
 docker-compose exec frontend nc -zv backend 5000
 
-# Capture network traffic
+# Capturar tráfego de rede
 docker-compose exec backend tcpdump -i eth0
 ```
 
-#### DNS Debugging
+### Debugging de DNS
 ```bash
-# Check DNS resolution
+# Verificar resolução DNS
 docker-compose exec backend nslookup google.com
 
-# Test DNS servers
+# Testar servidores DNS
 docker-compose exec backend nslookup google.com 8.8.8.8
 
-# Check hosts file
+# Verificar ficheiro hosts
 docker-compose exec backend cat /etc/hosts
 ```
 
-### 3. Performance Analysis
+## 3. Análise de Performance
 
-#### Resource Monitoring
+### Monitorização de Recursos
 ```bash
-# Real-time monitoring
+# Monitorização em tempo real
 docker stats
 
-# Detailed resource usage
+# Uso detalhado de recursos
 docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}"
 
-# Historical resource usage
+# Uso histórico de recursos
 docker system events --since 1h
 ```
 
-#### Performance Profiling
+# Procedimentos de Emergência
+
+## 1. Recuperação do Sistema
+
+### Reset Completo do Sistema
 ```bash
-# Profile application
-docker-compose exec backend python -m cProfile -o profile.stats app.py
-
-# Analyze profile results
-docker-compose exec backend python -c "
-import pstats
-p = pstats.Stats('profile.stats')
-p.sort_stats('cumulative').print_stats(20)
-"
-```
-
-## 🛠️ Advanced Troubleshooting
-
-### 1. Docker Daemon Issues
-
-#### Docker Daemon Not Running
-```bash
-# Check Docker daemon status
-sudo systemctl status docker
-
-# Start Docker daemon
-sudo systemctl start docker
-
-# Enable Docker daemon on boot
-sudo systemctl enable docker
-
-# Check Docker daemon logs
-sudo journalctl -u docker
-```
-
-#### Docker Daemon Configuration
-```bash
-# Check Docker daemon configuration
-sudo cat /etc/docker/daemon.json
-
-# Restart Docker daemon with new configuration
-sudo systemctl restart docker
-
-# Check Docker info
-docker info
-```
-
-### 2. Image Issues
-
-#### Corrupted Images
-```bash
-# Remove corrupted images
-docker rmi <image_name>
-
-# Pull fresh images
-docker pull <image_name>
-
-# Rebuild images
-docker-compose build --no-cache
-```
-
-#### Image Layer Issues
-```bash
-# Inspect image layers
-docker history <image_name>
-
-# Check image size
-docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
-
-# Optimize image layers
-# Use multi-stage builds
-# Combine RUN commands
-# Use .dockerignore
-```
-
-### 3. Security Issues
-
-#### Permission Denied
-```bash
-# Fix Docker socket permissions
-sudo chmod 666 /var/run/docker.sock
-
-# Add user to docker group
-sudo usermod -aG docker $USER
-newgrp docker
-
-# Check Docker daemon user
-ps aux | grep dockerd
-```
-
-#### Security Context Issues
-```bash
-# Check container user
-docker-compose exec backend whoami
-
-# Run as specific user
-# In docker-compose.yml:
-user: "1000:1000"
-
-# Check capabilities
-docker-compose exec backend capsh --print
-```
-
-## 📊 Monitoring and Logging
-
-### 1. Log Management
-
-#### Container Logs
-```bash
-# View real-time logs
-docker-compose logs -f
-
-# View logs for specific service
-docker-compose logs -f backend
-
-# View logs with timestamps
-docker-compose logs -t backend
-
-# Filter logs
-docker-compose logs backend | grep ERROR
-```
-
-#### Log Rotation
-```bash
-# Configure log rotation
-# In docker-compose.yml:
-logging:
-  driver: "json-file"
-  options:
-    max-size: "10m"
-    max-file: "3"
-```
-
-### 2. Monitoring Setup
-
-#### Basic Monitoring
-```bash
-# Install monitoring tools
-docker run -d --name=cadvisor \
-  -p 8080:8080 \
-  -v /:/rootfs:ro \
-  -v /var/run:/var/run:rw \
-  -v /sys:/sys:ro \
-  -v /var/lib/docker/:/var/lib/docker:ro \
-  gcr.io/cadvisor/cadvisor:latest
-```
-
-#### Advanced Monitoring
-```yaml
-# docker-compose.monitoring.yml
-version: '3.8'
-
-services:
-  prometheus:
-    image: prom/prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-
-  grafana:
-    image: grafana/grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - grafana_data:/var/lib/grafana
-
-volumes:
-  grafana_data:
-```
-
-## 🚨 Emergency Procedures
-
-### 1. System Recovery
-
-#### Full System Reset
-```bash
-# Stop all containers
+# Parar todos os contentores
 docker-compose down
 
-# Remove all containers
+# Remover todos os contentores
 docker container rm -f $(docker container ls -aq)
 
-# Remove all images
+# Remover todas as imagens
 docker image rm -f $(docker image ls -aq)
 
-# Clean up system
+# Limpar sistema
 docker system prune -a --volumes
 
-# Restart services
+# Reiniciar serviços
 docker-compose up -d
 ```
 
-#### Data Recovery
+### Recuperação de Dados
 ```bash
-# Backup all volumes
+# Backup de todos os volumes
 docker run --rm -v $(docker volume ls -q):/volumes -v $(pwd):/backup alpine tar czf /backup/volumes_backup.tar.gz -C /volumes .
 
-# Restore volumes
+# Restaurar volumes
 docker run --rm -v $(docker volume ls -q):/volumes -v $(pwd):/backup alpine tar xzf /backup/volumes_backup.tar.gz -C /volumes
 ```
 
-### 2. Disaster Recovery
+# Boas Práticas
 
-#### Backup Strategy
-```bash
-# Backup Docker Compose configuration
-tar czf docker-compose-backup.tar.gz docker-compose.yml .env
+## 1. Prevenção
 
-# Backup application data
-docker-compose exec db pg_dump -U appuser appdb > database_backup.sql
+1. **Atualizações Regulares**: Manter Docker e imagens atualizadas
+2. **Monitorização de Recursos**: Monitorizar uso de recursos regularmente
+3. **Estratégia de Backup**: Backups regulares de dados e configuração
+4. **Scanning de Segurança**: Scans de segurança regulares
+5. **Documentação**: Documentar todas as configurações e procedimentos
 
-# Backup volumes
-docker run --rm -v postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_data_backup.tar.gz -C /data .
-```
+## 2. Manutenção
 
-#### Restore Strategy
-```bash
-# Restore database
-docker-compose exec -T db psql -U appuser appdb < database_backup.sql
-
-# Restore volumes
-docker run --rm -v postgres_data:/data -v $(pwd):/backup alpine tar xzf /backup/postgres_data_backup.tar.gz -C /data
-
-# Restart services
-docker-compose down
-docker-compose up -d
-```
-
-## 📚 Best Practices
-
-### 1. Prevention
-
-1. **Regular Updates**: Keep Docker and images updated
-2. **Resource Monitoring**: Monitor resource usage regularly
-3. **Backup Strategy**: Regular backups of data and configuration
-4. **Security Scanning**: Regular security scans
-5. **Documentation**: Document all configurations and procedures
-
-### 2. Maintenance
-
-1. **Cleanup**: Regular cleanup of unused resources
-2. **Monitoring**: Continuous monitoring of system health
-3. **Testing**: Regular testing of backup and recovery procedures
-4. **Updates**: Regular updates of dependencies
-5. **Review**: Regular review of configurations
-
-### 3. Troubleshooting
-
-1. **Systematic Approach**: Follow systematic troubleshooting steps
-2. **Documentation**: Document all issues and solutions
-3. **Root Cause Analysis**: Find and fix root causes
-4. **Prevention**: Implement preventive measures
-5. **Knowledge Sharing**: Share knowledge with team
+1. **Limpeza**: Limpeza regular de recursos não usados
+2. **Monitorização**: Monitorização contínua da saúde do sistema
+3. **Testes**: Testes regulares de procedimentos de backup e recuperação
+4. **Atualizações**: Atualizações regulares de dependências
+5. **Revisão**: Revisão regular de configurações
 
 ---
 
-*For deployment information, see [production-deployment.md](production-deployment.md).*
+*Para informação de deploy, ver [production-deployment.md](production-deployment.md).*

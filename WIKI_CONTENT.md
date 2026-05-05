@@ -1,443 +1,156 @@
-# GitHub Wiki Content for React Login Project
+# Conteúdo da Wiki GitHub para Projeto React Login
 
-## Home Page
+## Página Inicial
 
-# React Login Application
+# Aplicação React Login
 
-A secure web application with user authentication, role-based access control, and comprehensive security features.
+Uma aplicação web segura com autenticação de utilizador, controlo de acesso baseado em roles e funcionalidades de segurança abrangentes.
 
-## Quick Start
+## Início Rápido
 
-### Prerequisites
+### Pré-requisitos
 - Node.js 18+
 - Python 3.13
 - Docker Desktop
 
-### Local Development
-```bash
-# Clone repository
-git clone <repository-url>
-cd react
+### Desenvolvimento Local
+Clone o repositório, configure o backend e frontend, e inicie os servidores de desenvolvimento.
 
-# Backend setup
-cd backend
-pip install -r requirements.txt
-python app.py
+### Deploy Docker
+Construa e execute com Docker usando docker compose up --build.
 
-# Frontend setup (new terminal)
-cd frontend
-npm install
-npm start
-```
-
-### Docker Deployment
-```bash
-# Build and run with Docker
-docker compose up --build
-```
-
-Access the application at http://localhost:3000
+Aceda à aplicação em http://localhost:3000
 
 ---
 
-## Installation Guide
+## Guia de Instalação
 
-### Backend Setup
+### Configuração Backend
 
-1. **Install Python Dependencies**
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   ```
+Instale dependências Python, configure a base de dados e execute o servidor Flask.
 
-2. **Database Setup**
-   ```bash
-   # Database is automatically created on first run
-   # Test users are pre-configured:
-   # - user@gmail.com / 123456 (normal)
-   # - admin@gmail.com / admin123 (admin)
-   # - guest@gmail.com / guest123 (guest)
-   ```
+### Configuração Frontend
 
-3. **Run Backend Server**
-   ```bash
-   python app.py
-   ```
+Instale dependências Node.js e inicie o servidor de desenvolvimento React.
 
-### Frontend Setup
+### Configuração Docker
 
-1. **Install Node.js Dependencies**
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. **Run Development Server**
-   ```bash
-   npm start
-   ```
-
-### Docker Setup
-
-1. **Install Docker Desktop**
-   - Download from https://www.docker.com/products/docker-desktop
-   - Start Docker Desktop
-
-2. **Build and Run**
-   ```bash
-   docker compose up --build
-   ```
+Instale Docker Desktop, construa e execute os contentores com docker compose.
 
 ---
 
-## User Guide
+## Guia do Utilizador
 
-### Login Process
+### Processo de Login
 
-1. **Access Application**
-   - Open http://localhost:3000 in browser
+Aceda à aplicação no navegador, introduza as credenciais e utilize as contas de teste ou registe um novo utilizador.
 
-2. **Enter Credentials**
-   - Use test accounts or register new user
+### Registo
 
-3. **User Roles**
-   - **Normal User**: Standard access
-   - **Admin User**: Administrative privileges
-   - **Guest User**: Limited access
+Registe novos utilizadores através do link de registo, introduzindo email, password e função.
 
-### Registration
+### Recursos de Segurança
 
-1. **Register New User**
-   - Click registration link
-   - Enter email and password
-   - Select role (if applicable)
-
-2. **Admin Registration**
-   - Use `/admin/create` endpoint
-   - Requires admin privileges
-
-### Security Features
-
-- **SQL Injection Protection**: All queries are parameterized
-- **Input Validation**: Email and password validation
-- **Rate Limiting**: Prevents brute force attacks
-- **CORS Security**: Restricted access domains
-- **Password Hashing**: SHA256 encryption
+Proteção contra injeção SQL, validação de inputs, rate limiting, segurança CORS e hashing de passwords SHA256.
 
 ---
 
-## API Documentation
+## Documentação API
 
-### Authentication Endpoints
+### Endpoints de Autenticação
 
-#### POST /login
-Authenticates user credentials.
+POST /login - Autentica credenciais do utilizador.
+POST /register - Regista nova conta de utilizador.
+GET /guest - Fornece acesso de convidado sem autenticação.
+GET /health - Endpoint de verificação de saúde.
 
-**Request:**
-```json
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "user": "user@example.com",
-  "role": "normal"
-}
-```
-
-#### POST /register
-Registers new user account.
-
-**Request:**
-```json
-{
-  "email": "newuser@example.com",
-  "password": "password123",
-  "role": "normal"
-}
-```
-
-#### GET /guest
-Provides guest access without authentication.
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Guest access granted",
-  "user": "guest",
-  "role": "guest"
-}
-```
-
-#### GET /health
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "status": "ok"
-}
-```
-
-### Security Headers
-
-All endpoints include:
-- CORS protection
-- Input validation
-- SQL injection prevention
-- Rate limiting
+Todos os endpoints incluem proteção CORS, validação de inputs, prevenção de injeção SQL e rate limiting.
 
 ---
 
-## Development Guide
+## Guia de Desenvolvimento
 
-### Project Structure
+### Estrutura do Projeto
 
-```
-react/
-├── backend/                 # Python Flask server
-│   ├── app.py              # Main application
-│   ├── database.py         # Database configuration
-│   ├── models.py           # User models
-│   ├── security.py         # Security module
-│   ├── rate_limiter.py     # Rate limiting
-│   ├── testes/             # Test files
-│   └── Dockerfile          # Docker configuration
-├── frontend/               # React application
-│   ├── src/
-│   │   ├── App.js         # Main component
-│   │   └── *.test.js      # Test files
-│   ├── public/            # Static assets
-│   └── Dockerfile         # Docker configuration
-├── .github/workflows/     # GitHub Actions
-├── docker-compose.yml     # Docker orchestration
-└── README.md              # Project documentation
-```
+O projeto está organizado com backend Python Flask, frontend React, workflows GitHub Actions, configuração Docker e documentação abrangente.
 
-### Testing
+### Testes
 
-#### Backend Tests
-```bash
-cd backend
-python testes/test_security.py
-python testes/test_database.py
-```
+Execute testes backend com Python, testes frontend com npm, e testes de segurança específicos.
 
-#### Frontend Tests
-```bash
-cd frontend
-npm test                    # Unit tests
-npm test -- --testPathPattern=integration  # Integration tests
-```
+### Padrões de Código
 
-#### Security Tests
-```bash
-# SQL injection protection
-# Input validation
-# Rate limiting
-# CORS configuration
-```
-
-### Code Standards
-
-- **Python**: PEP 8 style guide
-- **JavaScript**: ESLint configuration
-- **Comments**: Portuguese (Portugal)
-- **Security**: OWASP guidelines
+Siga guia de estilo PEP 8 para Python, configuração ESLint para JavaScript, comentários em português e diretrizes OWASP para segurança.
 
 ---
 
-## Deployment Guide
+## Guia de Deploy
 
-### Docker Deployment
+### Deploy Docker
 
-#### Development
-```bash
-docker compose up --build
-```
-
-#### Production
-```bash
-docker compose -f docker-compose.prod.yml up -d
-```
+Execute docker compose up --build para desenvolvimento e docker compose -f docker-compose.prod.yml up -d para produção.
 
 ### GitHub Actions
 
-#### CI Pipeline
-- **Triggers**: Push to main/devops, Pull requests
-- **Tests**: Backend and frontend test suites
-- **Build**: Docker image validation
-- **Security**: Vulnerability scanning
+Pipeline CI com triggers, testes, build e scanning de segurança. Pipeline de deploy com build de imagens, deploy para staging e testes de smoke.
 
-#### Deployment Pipeline
-- **Triggers**: Push to main branch
-- **Build**: Docker images
-- **Deploy**: Staging environment
-- **Tests**: Smoke tests and health checks
+### Variáveis de Ambiente
 
-### Environment Variables
+Configure ficheiro .env com credenciais Docker, webhook Slack e outras configurações necessárias.
 
-Create `.env` file:
-```env
-DOCKER_USERNAME=yourusername
-DOCKER_PASSWORD=yourpassword
-SLACK_WEBHOOK=your-webhook-url
-```
+### Monitorização
 
-### Monitoring
-
-#### Health Checks
-- Backend: `/health` endpoint
-- Frontend: HTTP status checks
-- Docker: Container health monitoring
-
-#### Logging
-- Application logs
-- Security events
-- Performance metrics
+Verificações de saúde para backend, frontend e contentores Docker. Logging de eventos da aplicação, eventos de segurança e métricas de performance.
 
 ---
 
 ## Troubleshooting
 
-### Common Issues
+### Issues Comuns
 
-#### Docker Issues
-```bash
-# Reset Docker environment
-docker compose down -rmi all
-docker system prune -a
-```
+Redefina ambiente Docker com docker compose down -rmi all e docker system prune -a. Reinicie a base de dados removendo ficheiro users.db. Verifique conflitos de portas com netstat.
 
-#### Database Issues
-```bash
-# Reset database
-rm backend/users.db
-python app.py  # Will recreate database
-```
+### Modo Debug
 
-#### Port Conflicts
-```bash
-# Check port usage
-netstat -ano | findstr :3000
-netstat -ano | findstr :5000
-```
-
-### Debug Mode
-
-#### Backend Debugging
-```bash
-# Enable debug mode
-export FLASK_ENV=development
-python app.py
-```
-
-#### Frontend Debugging
-```bash
-# Enable detailed logs
-npm start -- --verbose
-```
+Ative modo debug no backend com FLASK_ENV=development e no frontend com npm start --verbose.
 
 ---
 
-## Contributing
+## Contribuição
 
-### Development Workflow
+### Workflow de Desenvolvimento
 
-1. **Create Feature Branch**
-   ```bash
-   git checkout -b feature/new-feature
-   ```
+Crie branch de funcionalidade, faça alterações seguindo padrões de código, adicione testes e atualize documentação. Submeta pull request com resultados de testes.
 
-2. **Make Changes**
-   - Follow code standards
-   - Add tests
-   - Update documentation
+### Processo de Review de Código
 
-3. **Test Changes**
-   ```bash
-   # Run all tests
-   npm test
-   python testes/test_security.py
-   docker compose up --build
-   ```
-
-4. **Submit Pull Request**
-   - Create PR to main branch
-   - Include test results
-   - Update documentation
-
-### Code Review Process
-
-1. **Automated Checks**
-   - GitHub Actions CI pipeline
-   - Security scans
-   - Code quality checks
-
-2. **Manual Review**
-   - Code style compliance
-   - Security best practices
-   - Documentation updates
+Verificações automáticas do GitHub Actions CI, scanning de segurança e verificações de qualidade de código. Review manual de conformidade de estilo, boas práticas de segurança e atualizações de documentação.
 
 ---
 
-## Security
+## Segurança
 
-### Implemented Protections
+### Proteções Implementadas
 
-- **SQL Injection**: Parameterized queries
-- **XSS Protection**: Input sanitization
-- **CSRF Protection**: CORS configuration
-- **Rate Limiting**: IP-based request limiting
-- **Password Security**: SHA256 hashing
-- **Input Validation**: Email and password format checking
+Injeção SQL com queries parametrizadas, proteção XSS com sanitização de inputs, proteção CSRF com configuração CORS, rate limiting baseado em IP e segurança de passwords com hashing SHA256.
 
-### Security Testing
+### Testes de Segurança
 
-```bash
-# Run security tests
-python testes/test_security.py
+Execute testes de segurança com Python, teste proteção contra injeção SQL com múltiplas tentativas de login e verifique rate limiting.
 
-# Test SQL injection protection
-curl -X POST http://localhost:5000/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "'\'' OR '\''1'\''='\''1", "password": "password"}'
+### Scanning de Vulnerabilidades
 
-# Test rate limiting
-# Make multiple rapid login attempts
-```
-
-### Vulnerability Scanning
-
-- **Trivy**: Container vulnerability scanning
-- **OWASP ZAP**: Web application security testing
-- **Bandit**: Python security linter
+Utilize Trivy para scanning de contentores, OWASP ZAP para testes de segurança web e Bandit para linting de segurança Python.
 
 ---
 
 ## Changelog
 
-### Version 1.0.0
-- Initial release
-- Basic login functionality
-- SQLite database integration
-- Security features implemented
+### Versão 1.0.0
+Lançamento inicial com funcionalidade básica de login, integração de base de dados SQLite e funcionalidades de segurança implementadas.
 
-### Version 1.1.0
-- Docker containerization
-- GitHub Actions CI/CD
-- Enhanced security testing
-- Role-based access control
+### Versão 1.1.0
+Contentorização Docker, GitHub Actions CI/CD, testes de segurança melhorados e controlo de acesso baseado em roles.
 
-### Version 1.2.0
-- DevOps automation
-- Production deployment
-- Monitoring and logging
-- Performance optimizations
+### Versão 1.2.0
+Automação DevOps, deploy de produção, monitorização e logging, e otimizações de performance.

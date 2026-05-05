@@ -265,5 +265,3 @@ newgrp docker
 ```
 
 ---
-
-*Para deploy de produção, ver [production-deployment.md](production-deployment.md).*

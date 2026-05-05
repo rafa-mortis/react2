@@ -1,518 +1,266 @@
-# Rollback Procedures
+# Procedimentos de Rollback
 
-This document describes rollback procedures for the React Login Application.
+## Propósito
 
-## 🎯 Purpose
+Os procedimentos de rollback garantem:
+- Continuidade do serviço durante falhas
+- Preservação da integridade dos dados
+- Downtime mínimo durante rollbacks
+- Recuperação rápida de issues de deploy
 
-Rollback procedures ensure:
-- Quick recovery from failed deployments
-- Minimal service disruption
-- Data integrity preservation
-- Clear communication during incidents
+# Estratégias de Rollback
 
-## 🚨 Rollback Triggers
+## 1. Blue-Green Rollback
 
-### Automatic Triggers
-- Health check failures
-- High error rates (>5%)
-- Response time degradation (>2x baseline)
-- Database connection failures
+### Visão Geral da Estratégia
+O deploy Blue-Green mantém dois ambientes de produção idênticos:
+- **Blue**: Versão de produção atual
+- **Green**: Nova versão sendo deployada
 
-### Manual Triggers
-- User-reported issues
-- Performance degradation
-- Security vulnerabilities
-- Feature failures
+### Processo de Rollback
+```bash
+# Mudar tráfego de volta para ambiente blue
+./scripts/switch-traffic.sh blue
 
-## 🔄 Rollback Strategies
+# Verificar se ambiente blue está saudável
+./scripts/health-check.sh blue
 
-### 1. Blue-Green Rollback
+# Reduzir escala do ambiente green
+docker-compose -f docker-compose.green.yml down
 
-#### Architecture
-```
-Internet
-    ↓
-Load Balancer
-    ↓
-[Blue] ← Current Version
-[Green] ← New Version (failed)
+# Limpar recursos green
+docker-compose -f docker-compose.green.yml down -v
 ```
 
-#### Rollback Process
+### Script de Mudança de Tráfego
 ```bash
 #!/bin/bash
-# scripts/blue-green-rollback.sh
+# scripts/switch-traffic.sh
 
-CURRENT_ENV=$(docker-compose -f docker-compose.prod.yml ps -q backend | head -1)
-BLUE_ENV="blue"
-GREEN_ENV="green"
+ENVIRONMENT=${1:-blue}
 
-# Determine current active environment
-if docker-compose -f docker-compose.prod.yml -p blue ps | grep -q "Up"; then
-    ACTIVE_ENV=$BLUE_ENV
-    STANDBY_ENV=$GREEN_ENV
-else
-    ACTIVE_ENV=$GREEN_ENV
-    STANDBY_ENV=$BLUE_ENV
+if [ "$ENVIRONMENT" != "blue" ] && [ "$ENVIRONMENT" != "green" ]; then
+    echo "Usage: $0 [blue|green]"
+    exit 1
 fi
 
-echo "Active environment: $ACTIVE_ENV"
-echo "Rolling back to $STANDBY_ENV"
+echo "A mudar tráfego para ambiente $ENVIRONMENT..."
 
-# Switch traffic to standby environment
-./scripts/switch-traffic.sh $STANDBY_ENV
-
-# Verify rollback
-./scripts/health-check.sh $STANDBY_ENV
-
-if [ $? -eq 0 ]; then
-    echo "Rollback successful"
-    # Send notification
-    ./scripts/notify-rollback.sh $STANDBY_ENV
+# Atualizar configuração do load balancer
+if [ "$ENVIRONMENT" = "blue" ]; then
+    # Apontar para ambiente blue
+    sed -i 's/server green:/server blue:/' /etc/nginx/nginx.conf
 else
-    echo "Rollback failed - manual intervention required"
-    ./scripts/emergency-notify.sh "Rollback failed"
+    # Apontar para ambiente green
+    sed -i 's/server blue:/server green:/' /etc/nginx/nginx.conf
 fi
+
+# Recarregar nginx
+nginx -s reload
+
+echo "Tráfego mudado para ambiente $ENVIRONMENT"
 ```
 
-### 2. Database Rollback
+## 2. Rollback da Base de Dados
 
-#### Database Migration Rollback
-```python
-# backend/migrations/rollback.py
-from flask_migrate import upgrade, downgrade
-from database import get_db
-import logging
+### Visão Geral da Estratégia
+Os procedimentos de rollback da base de dados lidam com:
+- Mudanças de schema
+- Issues de migração de dados
+- Corrupção de dados
+- Degradação de performance
 
-class DatabaseRollback:
-    def __init__(self):
-        self.logger = logging.getLogger(__name__)
-    
-    def rollback_migration(self, revision):
-        """Rollback database to specific revision"""
-        try:
-            self.logger.info(f"Rolling back to revision {revision}")
-            downgrade(revision)
-            self.logger.info("Database rollback successful")
-            return True
-        except Exception as e:
-            self.logger.error(f"Database rollback failed: {str(e)}")
-            return False
-    
-    def backup_database(self):
-        """Create database backup before rollback"""
-        try:
-            import subprocess
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_file = f"/backups/rollback_backup_{timestamp}.sql"
-            
-            cmd = f"pg_dump -h db -U postgres appdb > {backup_file}"
-            subprocess.run(cmd, shell=True, check=True)
-            
-            self.logger.info(f"Database backup created: {backup_file}")
-            return backup_file
-        except Exception as e:
-            self.logger.error(f"Database backup failed: {str(e)}")
-            return None
-    
-    def verify_rollback(self):
-        """Verify database integrity after rollback"""
-        try:
-            db = next(get_db())
-            result = db.execute("SELECT COUNT(*) FROM users").scalar()
-            self.logger.info(f"Database verification successful: {result} users")
-            return True
-        except Exception as e:
-            self.logger.error(f"Database verification failed: {str(e)}")
-            return False
-```
-
-#### Database Rollback Script
+### Backup e Restauração da Base de Dados
 ```bash
-#!/bin/bash
-# scripts/database-rollback.sh
+# Criar backup da base de dados antes do rollback
+docker-compose exec db pg_dump -U appuser appdb > rollback_backup_$(date +%Y%m%d_%H%M%S).sql
 
-REVISION=$1
-BACKUP_FILE=$2
+# Restaurar de backup anterior
+docker-compose exec -T db psql -U appuser appdb < previous_backup.sql
 
-echo "Starting database rollback to revision $REVISION"
-
-# Create backup
-if [ -z "$BACKUP_FILE" ]; then
-    BACKUP_FILE=$(./scripts/backup-database.sh)
-    echo "Created backup: $BACKUP_FILE"
-fi
-
-# Rollback migration
+# Verificar integridade dos dados
 docker-compose exec backend python -c "
-from migrations.rollback import DatabaseRollback
-rollback = DatabaseRollback()
-success = rollback.rollback_migration('$REVISION')
-exit(0 if success else 1)
+from database import engine
+result = engine.execute('SELECT COUNT(*) FROM users').scalar()
+print(f'Contagem de utilizadores: {result}')
 "
-
-if [ $? -eq 0 ]; then
-    echo "Database rollback successful"
-    
-    # Verify rollback
-    docker-compose exec backend python -c "
-from migrations.rollback import DatabaseRollback
-rollback = DatabaseRollback()
-success = rollback.verify_rollback()
-exit(0 if success else 1)
-"
-    
-    if [ $? -eq 0 ]; then
-        echo "Database verification successful"
-    else
-        echo "Database verification failed - restoring backup"
-        ./scripts/restore-database.sh $BACKUP_FILE
-    fi
-else
-    echo "Database rollback failed - restoring backup"
-    ./scripts/restore-database.sh $BACKUP_FILE
-fi
 ```
 
-### 3. Application Rollback
-
-#### Docker Image Rollback
+### Rollback de Migração
 ```bash
-#!/bin/bash
-# scripts/app-rollback.sh
+# Rollback de migrações da base de dados
+docker-compose exec backend flask db downgrade
 
-TARGET_VERSION=$1
-SERVICE=$2
+# Rollback para versão específica
+docker-compose exec backend flask db downgrade -r <revision_id>
 
-if [ -z "$TARGET_VERSION" ]; then
-    echo "Usage: $0 <version> [service]"
-    echo "Available versions:"
-    docker images --format "table {{.Repository}}\t{{.Tag}}" | grep react-login
-    exit 1
-fi
-
-echo "Rolling back $SERVICE to version $TARGET_VERSION"
-
-# Pull target version
-docker pull ${DOCKER_USERNAME}/react-login-${SERVICE}:${TARGET_VERSION}
-
-# Update docker-compose.yml
-sed -i "s|image: ${DOCKER_USERNAME}/react-login-${SERVICE}:.*|image: ${DOCKER_USERNAME}/react-login-${SERVICE}:${TARGET_VERSION}|g" docker-compose.prod.yml
-
-# Restart service
-docker-compose -f docker-compose.prod.yml up -d $SERVICE
-
-# Wait for service to be ready
-sleep 30
-
-# Health check
-./scripts/health-check.sh $SERVICE
-
-if [ $? -eq 0 ]; then
-    echo "Rollback successful for $SERVICE"
-else
-    echo "Rollback failed for $SERVICE"
-    exit 1
-fi
+# Verificar histórico de migrações
+docker-compose exec backend flask db history
 ```
 
-#### Full Application Rollback
+## 3. Rollback da Aplicação
+
+### Visão Geral da Estratégia
+O rollback da aplicação lida com:
+- Issues de deploy de código
+- Problemas de configuração
+- Conflitos de dependências
+- Erros de runtime
+
+### Rollback de Imagem Docker
 ```bash
-#!/bin/bash
-# scripts/full-rollback.sh
+# Listar tags de imagem disponíveis
+docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.CreatedAt}}"
 
-TARGET_VERSION=$1
+# Marcar versão anterior como latest
+docker tag ${DOCKER_USERNAME}/react-login-backend:previous ${DOCKER_USERNAME}/react-login-backend:latest
+docker tag ${DOCKER_USERNAME}/react-login-frontend:previous ${DOCKER_USERNAME}/react-login-frontend:latest
 
-if [ -z "$TARGET_VERSION" ]; then
-    echo "Usage: $0 <version>"
-    echo "Available versions:"
-    git tag --sort=-version:refname | head -10
-    exit 1
-fi
+# Redeploy com versão anterior
+docker-compose down
+docker-compose up -d
 
-echo "Starting full application rollback to version $TARGET_VERSION"
-
-# Create current backup
-./scripts/create-backup.sh
-
-# Rollback frontend
-./scripts/app-rollback.sh $TARGET_VERSION frontend
-
-# Rollback backend
-./scripts/app-rollback.sh $TARGET_VERSION backend
-
-# Rollback database if needed
-read -p "Rollback database? (y/n): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    ./scripts/database-rollback.sh $TARGET_VERSION
-fi
-
-# Verify rollback
-./scripts/full-health-check.sh
-
-if [ $? -eq 0 ]; then
-    echo "Full rollback successful"
-    ./scripts/notify-rollback.sh $TARGET_VERSION
-else
-    echo "Rollback verification failed"
-    exit 1
-fi
+# Verificar deploy
+./scripts/health-check.sh
 ```
 
-## 📊 Rollback Monitoring
-
-### Health Checks
+### Rollback de Configuração
 ```bash
-#!/bin/bash
-# scripts/health-check.sh
+# Restaurar configuração anterior
+cp .env.production.backup .env.production
 
-SERVICE=${1:-"all"}
-MAX_RETRIES=30
-RETRY_INTERVAL=10
+# Restaurar configuração docker-compose
+cp docker-compose.prod.yml.backup docker-compose.prod.yml
 
-check_service_health() {
-    local service=$1
-    local retries=0
-    
-    echo "Checking health for $service..."
-    
-    while [ $retries -lt $MAX_RETRIES ]; do
-        case $service in
-            "frontend")
-                if curl -f http://localhost:3000 > /dev/null 2>&1; then
-                    echo "Frontend is healthy"
-                    return 0
-                fi
-                ;;
-            "backend")
-                if curl -f http://localhost:5000/health > /dev/null 2>&1; then
-                    echo "Backend is healthy"
-                    return 0
-                fi
-                ;;
-            "database")
-                if docker-compose exec -T db pg_isready -U postgres > /dev/null 2>&1; then
-                    echo "Database is healthy"
-                    return 0
-                fi
-                ;;
-            "all")
-                if curl -f http://localhost:3000 > /dev/null 2>&1 && \
-                   curl -f http://localhost:5000/health > /dev/null 2>&1 && \
-                   docker-compose exec -T db pg_isready -U postgres > /dev/null 2>&1; then
-                    echo "All services are healthy"
-                    return 0
-                fi
-                ;;
-        esac
-        
-        retries=$((retries + 1))
-        echo "Attempt $retries/$MAX_RETRIES failed, retrying in $RETRY_INTERVAL seconds..."
-        sleep $RETRY_INTERVAL
-    done
-    
-    echo "Health check failed for $service after $MAX_RETRIES attempts"
-    return 1
-}
+# Redeploy com configuração restaurada
+docker-compose down
+docker-compose up -d
 
-check_service_health $SERVICE
+# Verificar configuração
+docker-compose config
 ```
 
-### Performance Validation
-```bash
-#!/bin/bash
-# scripts/performance-check.sh
+# Rollback de Emergência
 
-BASELINE_RESPONSE_TIME=200  # milliseconds
-BASELINE_ERROR_RATE=1  # percentage
+## 1. Resposta Imediata
 
-echo "Running performance validation..."
-
-# Check response time
-RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:5000/health)
-RESPONSE_TIME_MS=$(echo "$RESPONSE_TIME * 1000" | bc)
-
-echo "Response time: ${RESPONSE_TIME_MS}ms"
-
-if (( $(echo "$RESPONSE_TIME_MS > $BASELINE_RESPONSE_TIME * 2" | bc -l) )); then
-    echo "ERROR: Response time is more than 2x baseline"
-    exit 1
-fi
-
-# Check error rate
-ERROR_RATE=$(./scripts/calculate-error-rate.sh)
-echo "Error rate: ${ERROR_RATE}%"
-
-if (( $(echo "$ERROR_RATE > $BASELINE_ERROR_RATE" | bc -l) )); then
-    echo "ERROR: Error rate exceeds baseline"
-    exit 1
-fi
-
-echo "Performance validation passed"
-```
-
-## 🚨 Emergency Procedures
-
-### Emergency Rollback
+### Script de Rollback de Emergência
 ```bash
 #!/bin/bash
 # scripts/emergency-rollback.sh
 
-echo "EMERGENCY ROLLBACK INITIATED"
+echo "A iniciar rollback de emergência..."
 
-# Get last known good version
-LAST_GOOD_VERSION=$(git tag --sort=-version:refname | head -2 | tail -1)
+# Parar deploy atual
+docker-compose down
 
-echo "Rolling back to last known good version: $LAST_GOOD_VERSION"
+# Mudar para configuração de emergência
+cp emergency/docker-compose.emergency.yml docker-compose.yml
+cp emergency/.env.emergency .env
 
-# Immediate traffic stop
-./scripts/stop-traffic.sh
+# Iniciar ambiente de emergência
+docker-compose up -d
 
-# Quick rollback
-./scripts/full-rollback.sh $LAST_GOOD_VERSION
+# Esperar pelos serviços iniciarem
+sleep 30
 
-# Restore traffic
-./scripts/start-traffic.sh
-
-# Emergency notification
-./scripts/emergency-notify.sh "Emergency rollback completed to $LAST_GOOD_VERSION"
+# Verificação de saúde
+if ./scripts/health-check.sh; then
+    echo "Rollback de emergência bem sucedido"
+else
+    echo "Rollback de emergência falhou - intervenção manual necessária"
+    exit 1
+fi
 ```
 
-### Disaster Recovery
+### Procedimentos Manuais de Emergência
+```bash
+# 1. Parar todos os serviços
+docker-compose down
+
+# 2. Pull da última imagem boa conhecida
+docker pull ${DOCKER_USERNAME}/react-login-backend:stable
+docker pull ${DOCKER_USERNAME}/react-login-frontend:stable
+
+# 3. Atualizar docker-compose.yml para usar imagens estáveis
+sed -i 's/:latest/:stable/g' docker-compose.yml
+
+# 4. Iniciar serviços
+docker-compose up -d
+
+# 5. Verificar saúde
+curl -f http://localhost:5000/health
+```
+
+## 2. Recuperação de Dados
+
+### Recuperação da Base de Dados
+```bash
+# Identificar último backup bom
+LATEST_BACKUP=$(ls -t backups/database/ | head -1)
+
+# Restaurar base de dados
+docker-compose exec -T db psql -U appuser appdb < backups/database/$LATEST_BACKUP
+
+# Verificar integridade dos dados
+docker-compose exec backend python scripts/verify_data.py
+```
+
+### Recuperação de Estado da Aplicação
+```bash
+# Restaurar configuração da aplicação
+cp backups/config/docker-compose.prod.yml docker-compose.prod.yml
+cp backups/config/.env.production .env.production
+
+# Restaurar certificados SSL
+cp -r backups/ssl/* /etc/nginx/ssl/
+
+# Reiniciar serviços
+docker-compose down
+docker-compose up -d
+```
+
+# Monitorização de Rollback
+
+## 1. Verificações de Saúde
+
+### Saúde da Aplicação
 ```bash
 #!/bin/bash
-# scripts/disaster-recovery.sh
+# scripts/health-check.sh
 
-BACKUP_FILE=$1
+ENVIRONMENT=${1:-production}
 
-if [ -z "$BACKUP_FILE" ]; then
-    echo "Usage: $0 <backup_file>"
-    echo "Available backups:"
-    ls -la /backups/
+echo "A verificar saúde do ambiente $ENVIRONMENT..."
+
+# Verificar frontend
+if curl -f http://localhost:3000 > /dev/null 2>&1; then
+    echo "✅ Frontend está saudável"
+else
+    echo "❌ Frontend está insaludável"
     exit 1
 fi
 
-echo "DISASTER RECOVERY INITIATED"
-echo "Restoring from backup: $BACKUP_FILE"
-
-# Stop all services
-docker-compose -f docker-compose.prod.yml down
-
-# Restore data
-./scripts/restore-full-backup.sh $BACKUP_FILE
-
-# Start services
-docker-compose -f docker-compose.prod.yml up -d
-
-# Verify recovery
-sleep 60
-./scripts/full-health-check.sh
-
-if [ $? -eq 0 ]; then
-    echo "Disaster recovery successful"
-    ./scripts/notify-recovery.sh "Disaster recovery completed"
+# Verificar backend
+if curl -f http://localhost:5000/health > /dev/null 2>&1; then
+    echo "✅ Backend está saudável"
 else
-    echo "Disaster recovery failed - manual intervention required"
-    ./scripts/emergency-notify.sh "Disaster recovery failed"
+    echo "❌ Backend está insaludável"
+    exit 1
 fi
+
+# Verificar base de dados
+if docker-compose exec db pg_isready -U appuser -d appdb > /dev/null 2>&1; then
+    echo "✅ Base de dados está saudável"
+else
+    echo "❌ Base de dados está insaludável"
+    exit 1
+fi
+
+echo "Todos os serviços estão saudáveis"
 ```
 
-## 📋 Rollback Checklist
-
-### Pre-Rollback Checklist
-- [ ] Identify rollback trigger
-- [ ] Determine rollback scope
-- [ ] Create current backup
-- [ ] Notify stakeholders
-- [ ] Prepare rollback plan
-- [ ] Verify rollback target
-- [ ] Schedule maintenance window if needed
-
-### Rollback Execution Checklist
-- [ ] Stop traffic to affected services
-- [ ] Execute rollback commands
-- [ ] Verify service health
-- [ ] Run smoke tests
-- [ ] Monitor performance
-- [ ] Restore traffic
-- [ ] Validate functionality
-- [ ] Update monitoring
-
-### Post-Rollback Checklist
-- [ ] Document rollback incident
-- [ ] Analyze root cause
-- [ ] Update procedures
-- [ ] Notify stakeholders
-- [ ] Schedule post-mortem
-- [ ] Update monitoring alerts
-- [ ] Review rollback procedures
-
-## 📚 Communication Templates
-
-### Rollback Notification
-```markdown
-# Rollback Notification
-
-## Incident Summary
-- **Incident ID**: INC-001
-- **Time**: [Timestamp]
-- **Trigger**: [Rollback trigger]
-- **Impact**: [Description of impact]
-
-## Rollback Details
-- **From Version**: [Previous version]
-- **To Version**: [Target version]
-- **Duration**: [Rollback duration]
-- **Services Affected**: [List of services]
-
-## Current Status
-- **Status**: [Current status]
-- **Health Check**: [Health check results]
-- **Performance**: [Performance metrics]
-- **User Impact**: [User impact assessment]
-
-## Next Steps
-- [ ] Root cause analysis
-- [ ] Incident report
-- [ ] Procedure updates
-- [ ] Stakeholder notification
-
-## Contact Information
-- **On-call Engineer**: [Name and contact]
-- **Team Lead**: [Name and contact]
-- **Stakeholders**: [List of stakeholders]
-```
-
-### Emergency Notification
-```markdown
-# EMERGENCY ROLLBACK NOTIFICATION
-
-## Emergency Summary
-- **Time**: [Timestamp]
-- **Severity**: CRITICAL
-- **Action**: Emergency rollback executed
-- **Impact**: [Description of impact]
-
-## Rollback Details
-- **From Version**: [Previous version]
-- **To Version**: [Target version]
-- **Duration**: [Rollback duration]
-
-## Current Status
-- **Services**: [Service status]
-- **Users**: [User impact]
-- **Monitoring**: [Monitoring status]
-
-## Immediate Actions
-- [ ] Verify service functionality
-- [ ] Monitor system performance
-- [ ] Check error rates
-- [ ] Validate user access
-
-## Follow-up Required
-- Root cause analysis
-- Incident report
+### Saúde da Base de Dados
 - Procedure review
 - Team notification
 ```

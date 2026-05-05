@@ -1,25 +1,23 @@
-# Environment Configurations
+# Configurações de Ambiente
 
-This document describes the different deployment environments for the React Login Application.
+## Propósito
 
-## Purpose
+Configurações de ambiente proporcionam:
+- Ambientes de deploy isolados
+- Gestão de configuração consistente
+- Configurações específicas de ambiente
+- Separação adequada de responsabilidades
 
-Environment configurations provide:
-- Isolated deployment environments
-- Consistent configuration management
-- Environment-specific settings
-- Proper separation of concerns
+## Tipos de Ambiente
 
-## Environment Types
+# Desenvolvimento
 
-### 1. Development Environment
+## Propósito
+- Desenvolvimento e teste local
+- Desenvolvimento de funcionalidades e debugging
+- Testes unitários e de integração
 
-#### Purpose
-- Local development and testing
-- Feature development and debugging
-- Unit and integration testing
-
-#### Configuration
+## Configuração
 ```yaml
 # docker-compose.dev.yml
 version: '3.8'
@@ -65,7 +63,7 @@ services:
       - SQLITE_DATABASE=app.db
 ```
 
-#### Environment Variables
+## Variáveis de Ambiente
 ```bash
 # .env.development
 NODE_ENV=development
@@ -77,15 +75,15 @@ REACT_APP_API_URL=http://localhost:5000
 LOG_LEVEL=DEBUG
 ```
 
-### 2. Staging Environment
+# Staging
 
-#### Purpose
-- Pre-production testing
-- User acceptance testing
-- Performance testing
-- Integration testing
+## Propósito
+- Teste pré-produção
+- Teste de aceitação de utilizador
+- Teste de performance
+- Teste de integração
 
-#### Configuration
+## Configuração
 ```yaml
 # docker-compose.staging.yml
 version: '3.8'
@@ -144,7 +142,7 @@ volumes:
   staging_postgres_data:
 ```
 
-#### Environment Variables
+## Variáveis de Ambiente
 ```bash
 # .env.staging
 NODE_ENV=production
@@ -157,15 +155,15 @@ REACT_APP_API_URL=https://staging-api.yourdomain.com
 LOG_LEVEL=INFO
 ```
 
-### 3. Production Environment
+# Produção
 
-#### Purpose
-- Live production deployment
-- End-user access
-- High availability and performance
-- Security and compliance
+## Propósito
+- Deploy de produção em tempo real
+- Acesso de utilizador final
+- Alta disponibilidade e performance
+- Segurança e conformidade
 
-#### Configuration
+## Configuração
 ```yaml
 # docker-compose.prod.yml
 version: '3.8'
@@ -276,7 +274,7 @@ volumes:
   prod_postgres_data:
 ```
 
-#### Environment Variables
+## Variáveis de Ambiente
 ```bash
 # .env.production
 NODE_ENV=production
@@ -290,11 +288,9 @@ REDIS_URL=redis://redis:6379/0
 LOG_LEVEL=WARNING
 ```
 
-## Configuration Management
+# Gestão de Configuração
 
-### 1. Environment Files
-
-#### File Structure
+## Estrutura de Ficheiros
 ```
 project-root/
 ├── .env.development
@@ -306,248 +302,113 @@ project-root/
 └── docker-compose.prod.yml
 ```
 
-#### Environment Selection
+## Seleção de Ambiente
 ```bash
-# Development
+# Desenvolvimento
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.development up -d
 
 # Staging
 docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging up -d
 
-# Production
+# Produção
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up -d
 ```
 
-### 2. Configuration Hierarchy
+# Comparação de Ambientes
 
-#### Priority Order
-1. Command line arguments
-2. Environment variables
-3. Environment files
-4. Docker Compose files
-5. Default values
+## Diferenças de Configuração
 
-#### Configuration Validation
-```bash
-# Validate configuration
-docker-compose config
-
-# Check specific environment
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml config
-```
-
-## Environment Comparison
-
-### Configuration Differences
-
-| Aspect | Development | Staging | Production |
-|--------|-------------|---------|------------|
-| **Database** | SQLite | PostgreSQL | PostgreSQL |
-| **Replicas** | 1 | 1 | Multiple |
+| Aspecto | Desenvolvimento | Staging | Produção |
+|----------|-----------------|----------|-----------|
+| **Base de Dados** | SQLite | PostgreSQL | PostgreSQL |
+| **Réplicas** | 1 | 1 | Múltiplas |
 | **SSL** | HTTP | HTTPS | HTTPS |
 | **Logging** | DEBUG | INFO | WARNING |
-| **Monitoring** | Basic | Full | Full |
-| **Backups** | None | Daily | Real-time |
-| **Security** | Minimal | Standard | High |
+| **Monitorização** | Básico | Completo | Completo |
+| **Backups** | Nenhum | Diário | Tempo real |
+| **Segurança** | Mínimo | Padrão | Alta |
 
-### Resource Allocation
+## Alocação de Recursos
 
-| Environment | CPU | Memory | Storage |
-|-------------|-----|--------|---------|
-| Development | Shared | Shared | Local |
+| Ambiente | CPU | Memória | Armazenamento |
+|----------|------|----------|---------------|
+| Desenvolvimento | Partilhado | Partilhado | Local |
 | Staging | 2 cores | 4GB | 20GB |
-| Production | 8+ cores | 16GB+ | 100GB+ |
+| Produção | 8+ cores | 16GB+ | 100GB+ |
 
-## Deployment Process
+# Processo de Deploy
 
-### 1. Environment Promotion
+## Promoção de Ambiente
 
-#### Development → Staging
+### Desenvolvimento → Staging
 ```bash
-# Build development version
+# Build versão desenvolvimento
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
 
-# Tag for staging
+# Tag para staging
 docker tag react-login-frontend:latest ${DOCKER_USERNAME}/react-login-frontend:staging-${BUILD_NUMBER}
 docker tag react-login-backend:latest ${DOCKER_USERNAME}/react-login-backend:staging-${BUILD_NUMBER}
 
-# Deploy to staging
+# Deploy para staging
 docker-compose -f docker-compose.yml -f docker-compose.staging.yml --env-file .env.staging up -d
 ```
 
-#### Staging → Production
+### Staging → Produção
 ```bash
-# Run staging tests
+# Executar testes staging
 ./scripts/run-staging-tests.sh
 
-# Tag for production
+# Tag para produção
 docker tag ${DOCKER_USERNAME}/react-login-frontend:staging-${BUILD_NUMBER} ${DOCKER_USERNAME}/react-login-frontend:latest
 docker tag ${DOCKER_USERNAME}/react-login-backend:staging-${BUILD_NUMBER} ${DOCKER_USERNAME}/react-login-backend:latest
 
-# Deploy to production
+# Deploy para produção
 ./scripts/deploy-production.sh
 ```
 
-### 2. Blue-Green Deployment
+# Segurança
 
-#### Production Deployment
+## Gestão de Secrets
+
+### Desenvolvimento
 ```bash
-# Deploy to green environment
-docker-compose -f docker-compose.prod.yml -p green up -d
-
-# Run smoke tests
-./scripts/smoke-tests.sh green
-
-# Switch traffic
-./scripts/switch-traffic.sh green
-
-# Cleanup blue environment
-docker-compose -f docker-compose.prod.yml -p blue down
-```
-
-## Security Considerations
-
-### 1. Environment Security
-
-#### Development
-- Local database only
-- No SSL required
-- Debug logging enabled
-- Minimal security controls
-
-#### Staging
-- Production-like security
-- SSL/TLS encryption
-- Comprehensive logging
-- Security scanning
-
-#### Production
-- Enhanced security controls
-- SSL/TLS with strong ciphers
-- Security monitoring
-- Compliance requirements
-
-### 2. Secret Management
-
-#### Development
-```bash
-# Use development secrets
+# Usar secrets de desenvolvimento
 SECRET_KEY=dev-secret-key
 DB_PASSWORD=dev-password
 ```
 
-#### Staging
+### Staging
 ```bash
-# Use staging secrets
+# Usar secrets de staging
 SECRET_KEY=${STAGING_SECRET_KEY}
 DB_PASSWORD=${STAGING_DB_PASSWORD}
 ```
 
-#### Production
+### Produção
 ```bash
-# Use production secrets
+# Usar secrets de produção
 SECRET_KEY=${SECRET_KEY}
 DB_PASSWORD=${DB_PASSWORD}
 ```
 
-## Monitoring and Logging
+# Boas Práticas
 
-### 1. Environment Monitoring
+## Gestão de Ambiente
 
-#### Development
-- Basic health checks
-- Local monitoring tools
-- Development logs
+1. **Consistência**: Manter ambientes o mais semelhantes possível
+2. **Isolamento**: Garantir ambientes devidamente isolados
+3. **Documentação**: Documentar todas as diferenças de ambiente
+4. **Controlo de Versões**: Rastrear configurações de ambiente
+5. **Automação**: Automatizar setup e gestão de ambiente
 
-#### Staging
-- Full monitoring stack
-- Performance metrics
-- Error tracking
+## Segurança
 
-#### Production
-- Comprehensive monitoring
-- Alerting system
-- Log aggregation
-
-### 2. Logging Configuration
-
-#### Log Levels
-- **Development**: DEBUG
-- **Staging**: INFO
-- **Production**: WARNING
-
-#### Log Destinations
-- **Development**: Console
-- **Staging**: File + Console
-- **Production**: File + Centralized logging
-
-## Troubleshooting
-
-### Environment-Specific Issues
-
-#### Development Issues
-```bash
-# Check development logs
-docker-compose -f docker-compose.dev.yml logs
-
-# Restart development services
-docker-compose -f docker-compose.dev.yml restart
-
-# Reset development environment
-docker-compose -f docker-compose.dev.yml down -v
-docker-compose -f docker-compose.dev.yml up -d
-```
-
-#### Staging Issues
-```bash
-# Check staging logs
-docker-compose -f docker-compose.staging.yml logs
-
-# Restart staging services
-docker-compose -f docker-compose.staging.yml restart
-
-# Check staging health
-curl https://staging.yourdomain.com/health
-```
-
-#### Production Issues
-```bash
-# Check production logs
-docker-compose -f docker-compose.prod.yml logs
-
-# Check production health
-curl https://yourdomain.com/health
-
-# Emergency rollback
-./scripts/emergency-rollback.sh
-```
-
-## Best Practices
-
-### 1. Environment Management
-
-1. **Consistency**: Keep environments as similar as possible
-2. **Isolation**: Ensure environments are properly isolated
-3. **Documentation**: Document all environment differences
-4. **Version Control**: Track environment configurations
-5. **Automation**: Automate environment setup and management
-
-### 2. Security
-
-1. **Least Privilege**: Use minimal required permissions
-2. **Secret Management**: Proper secret management practices
-3. **Network Isolation**: Proper network segmentation
-4. **Regular Updates**: Keep dependencies updated
-5. **Security Scanning**: Regular security assessments
-
-### 3. Deployment
-
-1. **Automated Testing**: Test in all environments
-2. **Gradual Rollout**: Use blue-green or canary deployments
-3. **Rollback Planning**: Always have rollback procedures
-4. **Monitoring**: Comprehensive monitoring and alerting
-5. **Documentation**: Document all deployment procedures
+1. **Privilégio Mínimo**: Usar permissões mínimas necessárias
+2. **Gestão de Secrets**: Práticas adequadas de gestão de secrets
+3. **Isolamento de Rede**: Segmentação de rede adequada
+4. **Atualizações Regulares**: Manter dependências atualizadas
+5. **Scanning de Segurança**: Avaliações de segurança regulares
 
 ---
 
-*For deployment procedures, see [monitoring.md](monitoring.md).*
+*Para procedimentos de deploy, ver [monitoring.md](monitoring.md).*
