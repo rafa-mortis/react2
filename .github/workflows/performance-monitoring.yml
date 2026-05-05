@@ -2,7 +2,7 @@ name: Performance Monitoring
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feature/*, feature/github-actions-enhancement ]
   pull_request:
     branches: [ main ]
   schedule:

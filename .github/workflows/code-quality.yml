@@ -2,7 +2,7 @@ name: Code Quality Checks
 
 on:
   push:
-    branches: [ main, feature/* ]
+    branches: [ main, feature/*, feature/github-actions-enhancement ]
   pull_request:
     branches: [ main ]
 
