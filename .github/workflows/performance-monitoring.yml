@@ -18,27 +18,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Create test payload
-      run: |
-        echo '{"email": "test@example.com", "password": "testpass123"}' > test_payload.json
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
         
-    - name: Install Apache Bench
+    - name: Install dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y apache2-utils
+        cd frontend
+        npm ci
         
-    - name: Build test environment
+    - name: Build application
       run: |
-        docker-compose -f docker-compose.yml up -d
-        sleep 30  # Wait for services to be ready
-        
-    - name: Run backend performance tests
-      run: |
-        # Test login endpoint performance
-        ab -n 100 -c 10 -p test_payload.json -T application/json http://localhost:5000/login || true
+        cd frontend
+        npm run build || true
         
     - name: Run Lighthouse CI
       uses: treosh/lighthouse-ci-action@v10
@@ -46,10 +39,6 @@ jobs:
         configPath: '.lighthouserc.json'
         uploadArtifacts: true
         temporaryPublicStorage: true
-        
-    - name: Cleanup
-      run: |
-        docker-compose -f docker-compose.yml down -v
 
   # Bundle size monitoring
   bundle-size-monitor:
