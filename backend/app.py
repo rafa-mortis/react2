@@ -204,4 +204,4 @@ if __name__ == '__main__':
     from database import Base
     Base.metadata.create_all(bind=engine)
     
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

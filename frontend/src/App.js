@@ -45,7 +45,7 @@ function App() {
 
     try {
       // Enviar requisição POST para o backend
-      const response = await fetch('/login', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000'}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

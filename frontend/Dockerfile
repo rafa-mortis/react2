@@ -13,12 +13,6 @@ RUN npm ci --only=production
 # Copy source code
 COPY . .
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-RUN chown -R nextjs:nodejs /app
-USER nextjs
-
 # Expose port 3000
 EXPOSE 3000
 
