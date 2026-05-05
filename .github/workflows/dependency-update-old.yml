@@ -9,13 +9,16 @@ on:
     branches: [ main, feature/*, feature/github-actions-enhancement ]
 
 jobs:
+  # Update Python dependencies
   update-python-deps:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -48,13 +51,16 @@ jobs:
         branch: chore/update-python-deps
         delete-branch: true
 
+  # Update Node.js dependencies
   update-node-deps:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
@@ -85,3 +91,28 @@ jobs:
           Please review the changes and ensure all tests pass.
         branch: chore/update-node-deps
         delete-branch: true
+
+  # Check for security vulnerabilities
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [update-python-deps, update-node-deps]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high frontend/
+        command: monitor
+        
+    - name: Run Snyk for Python
+      uses: snyk/actions/python@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high backend/
+        command: monitor
