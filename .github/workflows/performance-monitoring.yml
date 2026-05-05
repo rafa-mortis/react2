@@ -46,6 +46,7 @@ jobs:
         configPath: '.lighthouserc.json'
         uploadArtifacts: true
         temporaryPublicStorage: true
+        artifactName: 'lighthouse-results'
 
   # Bundle size monitoring
   bundle-size-monitor:
