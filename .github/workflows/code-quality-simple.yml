@@ -21,7 +21,6 @@ jobs:
         
     - name: Install dependencies
       run: |
-        cd backend
         pip install flake8 black isort pylint bandit
         
     - name: Run code quality checks
