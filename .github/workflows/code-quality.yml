@@ -24,7 +24,7 @@ jobs:
       run: |
         cd backend
         pip install -r requirements.txt
-        pip install flake8 black isort pylint
+        pip install flake8 black isort pylint bandit
         
     - name: Run Black (code formatting)
       run: |
