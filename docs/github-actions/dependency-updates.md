@@ -1,6 +1,6 @@
 # Gestão de Dependências
 
-Este documento descreve o processo automatizado de atualização de dependências para a aplicação React Login.
+Este documento descreve o processo de atualização de dependências para a aplicação React Login.
 
 ## Propósito
 
@@ -30,7 +30,7 @@ O workflow de gestão de dependências garante que:
 
 **Propósito**: Atualiza dependências Python para as versões mais recentes
 **Ferramenta**: pip-compile para resolução de dependências
-**Segurança**: Fixa versões exatas para reprodutibilidade
+**Output**: requirements.txt atualizado com novas versões exatas para reprodutibilidade
 
 #### 2. Processo de Validação
 ```yaml

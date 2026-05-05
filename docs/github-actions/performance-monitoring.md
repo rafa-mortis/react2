@@ -1,26 +1,26 @@
-# Performance Monitoring
+# Monitorização de Performance
 
-This document describes the performance monitoring workflow for the React Login Application.
+Este documento descreve o workflow de monitorização de performance para a aplicação React Login.
 
-## 🎯 Purpose
+## Propósito
 
-The performance monitoring workflow ensures that:
-- Application performance meets standards
-- Performance regressions are detected early
-- Bundle sizes remain optimized
-- Database performance is tracked
+O workflow de monitorização de performance garante que:
+- A performance da aplicação cumpre os padrões
+- As regressões de performance são detetadas cedo
+- Os tamanhos dos bundles permanecem otimizados
+- A performance da base de dados é rastreada
 
-## 🔄 Workflow Triggers
+## Triggers do Workflow
 
-- **Push to main**: Performance baseline updates
-- **Pull requests**: Performance regression detection
-- **Schedule**: Daily performance monitoring
+- **Push para main**: Atualizações de baseline de performance
+- **Pull requests**: Detecção de regressão de performance
+- **Schedule**: Monitorização diária de performance
 
-## 📋 Performance Checks
+## Verificações de Performance
 
-### Application Performance Tests
+### Testes de Performance da Aplicação
 
-#### 1. Load Testing with Apache Bench
+#### 1. Testes de Carga com Apache Bench
 ```yaml
 - name: Run backend performance tests
   run: |
@@ -32,9 +32,9 @@ The performance monitoring workflow ensures that:
     ab -n 100 -c 10 -p test_payload.json -T application/json http://localhost:5000/login || true
 ```
 
-**Purpose**: Load testing for API endpoints
-**Configuration**: 100 requests, 10 concurrent connections
-**Metrics**: Response time, throughput, error rate
+**Propósito**: Testes de carga dos endpoints do backend
+**Método**: Apache Bench com pedidos concorrentes
+**Métricas**: Tempos de resposta, throughput, taxas de erro
 
 #### 2. Lighthouse CI
 ```yaml

@@ -1,49 +1,49 @@
-# Release Management
+# Gestão de Releases
 
-This document describes the release management workflow for the React Login Application.
+Este documento descreve o workflow de gestão de releases para a aplicação React Login.
 
-## 🎯 Purpose
+## Propósito
 
-The release management workflow ensures that:
-- Releases are created consistently
-- Versioning follows semantic versioning
-- Release notes are comprehensive
-- Deployments are reliable and tracked
+O workflow de gestão de releases garante que:
+- Os releases são criados de forma consistente
+- O versionamento segue semantic versioning
+- As notas de release são abrangentes
+- Os deploys são fiáveis e rastreados
 
-## 🔄 Workflow Triggers
+## Triggers do Workflow
 
-- **Git tags**: Automated release on version tags (v*)
-- **Manual dispatch**: On-demand release creation
+- **Tags Git**: Release automático em tags de versão (v*)
+- **Manual dispatch**: Criação de releases sob demanda
 
-## 📋 Release Process
+## Processo de Release
 
-### 1. Release Creation
+### 1. Criação de Release
 
-#### Changelog Generation
+#### Geração de Changelog
 ```yaml
 - name: Generate changelog
   id: changelog
   run: |
-    # Get the previous tag
+    # Obter a tag anterior
     PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
     
-    # Generate changelog
+    # Gerar changelog
     if [ -n "$PREVIOUS_TAG" ]; then
       CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD)
     else
       CHANGELOG=$(git log --pretty=format:"- %s (%h)")
     fi
     
-    # Save changelog to file
+    # Guardar changelog em ficheiro
     echo "$CHANGELOG" > CHANGELOG.md
     echo "changelog<<EOF" >> $GITHUB_OUTPUT
     echo "$CHANGELOG" >> $GITHUB_OUTPUT
     echo "EOF" >> $GITHUB_OUTPUT
 ```
 
-**Purpose**: Automatic changelog generation from git commits
-**Method**: Git log between previous and current tags
-**Output**: Structured changelog for release notes
+**Propósito**: Geração automática de changelog a partir de commits git
+**Método**: Git log entre tags anterior e atual
+**Output**: Changelog estruturado para notas de release
 
 #### GitHub Release Creation
 ```yaml
