@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 permissions:
-  security-events: read
+  security-events: write
 
 jobs:
   backend-ci:
