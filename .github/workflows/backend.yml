@@ -37,8 +37,8 @@ jobs:
       run: |
         echo "::group::Running security vulnerability scan"
         pip install safety
-        safety check --json --output safety-report.json || true
-        safety check
+        safety scan --json --output safety-report.json || true
+        safety scan
         echo "::endgroup::"
         
     - name: 🧪 Run database tests
