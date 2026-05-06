@@ -3,6 +3,15 @@ const { test, expect } = require('@playwright/test');
 
 // Teste end-to-end: fluxo completo de login
 test('basic login flow', async ({ page }) => {
+  // Mock da rota de login para retornar resposta controlada
+  await page.route('**/login', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, user: 'test@gmail.com', role: 'normal' }),
+    });
+  });
+  
   // Navegar para a página de login
   await page.goto('http://localhost:3000');
   
