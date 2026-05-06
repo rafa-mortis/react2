@@ -2,6 +2,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
+const { describe, test, expect } = require('@jest/globals');
 
 // Mock do fetch para simular chamadas API
 global.fetch = jest.fn(() =>

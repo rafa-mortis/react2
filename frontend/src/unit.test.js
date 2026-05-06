@@ -1,4 +1,6 @@
 // Teste unitário para a função de validação de email
+const { describe, test, expect } = require('@jest/globals');
+
 const validateEmail = (email) => {
   const atIndex = email.indexOf('@');
   const dotIndex = email.lastIndexOf('.');
