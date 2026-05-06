@@ -30,7 +30,7 @@ jobs:
       working-directory: ./frontend
       run: |
         echo "::group::Installing npm dependencies"
-        npm ci --only=production
+        npm ci
         echo "::endgroup::"
         
     - name: 🔍 Run security audit
