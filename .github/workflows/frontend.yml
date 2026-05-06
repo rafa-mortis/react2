@@ -44,14 +44,14 @@ jobs:
       working-directory: ./frontend
       run: |
         echo "::group::Running unit tests"
-        npm test -- --watchAll=false --coverage --testPathPattern=unit
+        npm test -- --watchAll=false --coverage src/unit.test.js
         echo "::endgroup::"
         
     - name: 🔗 Run integration tests
       working-directory: ./frontend
       run: |
         echo "::group::Running integration tests"
-        npm test -- --watchAll=false --testPathPattern=integration
+        npm test -- --watchAll=false src/integration.test.js
         echo "::endgroup::"
         
     - name: 🏗️ Build application
