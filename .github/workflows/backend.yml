@@ -3,10 +3,8 @@ name: Backend CI Pipeline
 on:
   push:
     branches: [ main, github-actions ]
-    paths: [ 'backend/**' ]
   pull_request:
     branches: [ main ]
-    paths: [ 'backend/**' ]
 
 jobs:
   backend-ci:
