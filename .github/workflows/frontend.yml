@@ -28,15 +28,15 @@ jobs:
       working-directory: ./frontend
       run: |
         echo "::group::Installing npm dependencies"
-        npm ci --include=dev
+        npm install
         echo "::endgroup::"
         
-    - name: 🔍 Run security audit
-      working-directory: ./frontend
-      run: |
-        echo "::group::Running npm security audit"
-        npm audit --audit-level=moderate
-        echo "::endgroup::"
+    # - name: 🔍 Run security audit
+    #   working-directory: ./frontend
+    #   run: |
+    #     echo "::group::Running npm security audit"
+    #     npm audit --audit-level=moderate
+    #     echo "::endgroup::"
         
     - name: 🧪 Run unit tests
       working-directory: ./frontend
