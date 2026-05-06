@@ -12,7 +12,7 @@ global.fetch = jest.fn(() =>
 );
 
 // Teste de integração: verificar se a página de login é renderizada corretamente
-test('renders login page', () => {
+it('renders login page', () => {
   render(<App />);
 
   // Verificar se o título da página de login está presente
@@ -24,7 +24,7 @@ test('renders login page', () => {
 });
 
 // Teste mock de integração: simular login com sucesso
-test('mock integration login success', () => {
+it('mock integration login success', () => {
   render(<App />);
   
   // Preencher formulário
@@ -37,7 +37,7 @@ test('mock integration login success', () => {
 });
 
 // Teste mock de integração: simular chamada fetch
-test('mock fetch API call', async () => {
+it('mock fetch API call', async () => {
   const mockResponse = { success: true, user: 'test@gmail.com' };
   fetch.mockResolvedValueOnce({
     ok: true,
