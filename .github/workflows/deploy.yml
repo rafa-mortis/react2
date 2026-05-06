@@ -1,0 +1,231 @@
+name: Deploy Simulation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [closed]
+
+jobs:
+  deploy-simulation:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true)
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐳 Build Docker Compose services
+      run: |
+        echo "::group::Building all services with Docker Compose"
+        docker-compose build --no-cache
+        echo "::endgroup::"
+        
+    - name: 🚀 Simulate deployment startup
+      run: |
+        echo "::group::Starting services for deployment simulation"
+        docker-compose up -d
+        
+        echo "Waiting for services to be healthy..."
+        sleep 60
+        
+        echo "Checking service status..."
+        docker-compose ps
+        echo "::endgroup::"
+        
+    - name: 🔍 Health check simulation
+      run: |
+        echo "::group::Running health checks"
+        
+        echo "Checking backend health..."
+        for i in {1..10}; do
+          if curl -f http://localhost:5000/health; then
+            echo "✅ Backend is healthy"
+            break
+          else
+            echo "⏳ Waiting for backend... ($i/10)"
+            sleep 10
+          fi
+        done
+        
+        echo "Checking frontend availability..."
+        for i in {1..10}; do
+          if curl -f http://localhost:3000; then
+            echo "✅ Frontend is available"
+            break
+          else
+            echo "⏳ Waiting for frontend... ($i/10)"
+            sleep 10
+          fi
+        done
+        
+        echo "::endgroup::"
+        
+    - name: 🧪 Integration test simulation
+      run: |
+        echo "::group::Running integration tests"
+        
+        echo "Testing user registration..."
+        curl -X POST http://localhost:5000/register \
+          -H "Content-Type: application/json" \
+          -d '{"email": "test@example.com", "password": "test123", "role": "normal"}' \
+          -w "Status: %{http_code}\n"
+        
+        echo "Testing user login..."
+        curl -X POST http://localhost:5000/login \
+          -H "Content-Type: application/json" \
+          -d '{"email": "user@gmail.com", "password": "123456"}' \
+          -w "Status: %{http_code}\n"
+        
+        echo "::endgroup::"
+        
+    - name: 📊 Generate deployment report
+      run: |
+        echo "::group::Generating deployment report"
+        
+        cat > deployment-report.md << EOF
+        # Deployment Simulation Report
+        
+        **Date:** $(date)
+        **Commit:** ${{ github.sha }}
+        **Branch:** ${{ github.ref_name }}
+        
+        ## Services Status
+        \`\`\`
+        $(docker-compose ps)
+        \`\`\`
+        
+        ## Container Logs
+        ### Backend
+        \`\`\`
+        $(docker-compose logs --tail=50 backend)
+        \`\`\`
+        
+        ### Frontend
+        \`\`\`
+        $(docker-compose logs --tail=50 frontend)
+        \`\`\`
+        
+        ## Health Check Results
+        - Backend: $(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health)
+        - Frontend: $(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
+        
+        EOF
+        
+        echo "::endgroup::"
+        
+    - name: 📋 Upload deployment artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: deployment-report-${{ github.run_number }}
+        path: deployment-report.md
+        retention-days: 30
+        
+    - name: 🧹 Cleanup
+      if: always()
+      run: |
+        echo "::group::Cleaning up deployment simulation"
+        docker-compose down --volumes --remove-orphans
+        docker system prune -f
+        echo "::endgroup::"
+
+  production-simulation:
+    runs-on: ubuntu-latest
+    needs: deploy-simulation
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🏷️ Tag and prepare production images
+      run: |
+        echo "::group::Preparing production images"
+        
+        # Simulate production image tagging
+        VERSION=${{ github.run_number }}
+        COMMIT_SHA=${{ github.sha }}
+        
+        echo "Building production images with version: $VERSION"
+        echo "Commit SHA: $COMMIT_SHA"
+        
+        # Build frontend production image
+        docker build -t react-frontend:prod-$VERSION ./frontend
+        docker tag react-frontend:prod-$VERSION react-frontend:latest
+        
+        # Build backend production image
+        docker build -t react-backend:prod-$VERSION ./backend
+        docker tag react-backend:prod-$VERSION react-backend:latest
+        
+        echo "✅ Production images built successfully"
+        echo "::endgroup::"
+        
+    - name: 📝 Production deployment simulation
+      run: |
+        echo "::group::Simulating production deployment"
+        
+        echo "🚀 Simulating production deployment steps:"
+        echo "1. ✅ Images built and tagged"
+        echo "2. 🔄 Simulating registry push (would push to Docker Hub)"
+        echo "3. 🔄 Simulating production environment update"
+        echo "4. 🔄 Simulating zero-downtime deployment"
+        echo "5. 🔄 Simulating rollback capability"
+        
+        # Create production docker-compose file
+        cat > docker-compose.prod.yml << EOF
+        version: '3.8'
+        services:
+          backend:
+            image: react-backend:prod-${{ github.run_number }}
+            container_name: react-login-backend-prod
+            ports:
+              - "5000:5000"
+            environment:
+              - FLASK_ENV=production
+              - PYTHONUNBUFFERED=1
+            restart: unless-stopped
+            healthcheck:
+              test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+              start_period: 40s
+          
+          frontend:
+            image: react-frontend:prod-${{ github.run_number }}
+            container_name: react-login-frontend-prod
+            ports:
+              - "3000:3000"
+            environment:
+              - REACT_APP_API_URL=http://localhost:5000
+            depends_on:
+              - backend
+            restart: unless-stopped
+            healthcheck:
+              test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+              start_period: 40s
+        EOF
+        
+        echo "✅ Production docker-compose file created"
+        echo "::endgroup::"
+        
+    - name: 📋 Production artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: production-config-${{ github.run_number }}
+        path: docker-compose.prod.yml
+        retention-days: 90
+        
+    - name: 🧹 Production cleanup
+      if: always()
+      run: |
+        echo "::group::Cleaning up production simulation"
+        docker rmi react-frontend:prod-${{ github.run_number }} react-frontend:latest || true
+        docker rmi react-backend:prod-${{ github.run_number }} react-backend:latest || true
+        echo "::endgroup::"
