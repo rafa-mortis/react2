@@ -125,7 +125,169 @@ Tabela users com as seguintes colunas:
 - Testes comprehensive em todos os niveis
 - Comentarios em portugues de Portugal
 
-# Manutencao
+# GitHub Actions CI/CD
+
+## Visao Geral
+O projeto utiliza pipelines automatizados de CI/CD com GitHub Actions para garantir qualidade e seguranca no desenvolvimento e deployment.
+
+## Workflows Configurados
+
+### Frontend Pipeline (.github/workflows/frontend.yml)
+**Triggers:**
+- Push para branches main ou github-actions com mudanças em frontend/
+- Pull requests para main com mudanças em frontend/
+
+**Etapas:**
+1. **Setup Node.js 18** - Configuracao do ambiente Node.js
+2. **Install Dependencies** - Instalacao com npm ci para cache otimizado
+3. **Security Audit** - Verificacao de vulnerabilidades com npm audit
+4. **Unit Tests** - Testes unitarios com coverage
+5. **Integration Tests** - Testes de integracao
+6. **Build Application** - Build de producao do React
+7. **Docker Validation** - Build e teste da imagem Docker
+8. **Playwright Tests** - Testes end-to-end
+
+### Backend Pipeline (.github/workflows/backend.yml)
+**Triggers:**
+- Push para branches main ou github-actions com mudanças em backend/
+- Pull requests para main com mudanças em backend/
+
+**Etapas:**
+1. **Setup Python 3.13** - Configuracao do ambiente Python
+2. **Install Dependencies** - Instalacao via requirements.txt
+3. **Security Audit** - Scan com safety
+4. **Database Tests** - Testes do banco de dados
+5. **Security Tests** - Testes de seguranca
+6. **Application Tests** - Testes gerais da aplicacao
+7. **Docker Validation** - Build e teste da imagem Docker
+8. **Security Scan** - Scan de vulnerabilidades com Trivy
+9. **Code Quality** - Linting e formatacao com flake8/black/isort
+
+### Deploy Simulation (.github/workflows/deploy.yml)
+**Triggers:**
+- Push para branch main
+- Pull requests merged para main
+
+**Etapas:**
+1. **Docker Compose Build** - Build de todos os servicos
+2. **Deployment Startup** - Inicializacao dos servicos
+3. **Health Checks** - Verificacao de saude dos servicos
+4. **Integration Tests** - Testes de integracao da aplicacao
+5. **Deployment Report** - Geracao de relatorio detalhado
+6. **Production Simulation** - Simulacao de deployment prod
+
+## Configuracao Local
+
+### Pré-requisitos
+```bash
+# Git
+git --version
+
+# Docker
+docker --version
+docker-compose --version
+
+# Node.js (para frontend)
+node --version
+npm --version
+
+# Python (para backend)
+python --version
+pip --version
+```
+
+### Testar Workflows Localmente
+```bash
+# Instalar act (GitHub Actions runner)
+# Windows: choco install act
+# Mac: brew install act
+# Linux: https://github.com/nektos/act
+
+# Testar workflow especifico
+act -j frontend-ci
+act -j backend-ci
+act -j deploy-simulation
+
+# Testar todos os workflows
+act
+```
+
+## Artefatos e Relatorios
+
+### Artefatos Gerados
+**Frontend:**
+- frontend-build - Build da aplicacao React
+- playwright-report - Relatorios dos testes E2E
+
+**Backend:**
+- backend-test-results - Resultados dos testes e security scan
+- security-scan-results - Relatorios do Trivy
+
+**Deployment:**
+- deployment-report-{run_number} - Relatorio completo do deployment
+- production-config-{run_number} - Configuracao de producao
+
+### Visualizacao dos Artefatos
+1. Acesse o repositorio no GitHub
+2. Va para "Actions"
+3. Selecione o workflow execution
+4. Clique em "Artifacts" para baixar os relatorios
+
+## Seguranca Implementada
+
+### Scans Automaticos
+1. **Frontend:**
+   - npm audit - Vulnerabilidades de pacotes npm
+   - Playwright security tests
+
+2. **Backend:**
+   - safety - Vulnerabilidades de pacotes Python
+   - Trivy - Scan de vulnerabilidades de container
+   - Testes de seguranca customizados
+
+3. **Infrastructure:**
+   - Docker security scanning
+   - Code quality checks
+
+## Fluxo de Deployment
+
+### Development Workflow
+1. Developer Push → Feature Branch
+2. CI Pipeline → Tests Pass
+3. Pull Request → Code Review
+4. Merge to main → Deploy Simulation
+
+### Pipeline Triggers
+1. **Development:**
+   - Push para github-actions → CI pipelines
+   - Pull requests → CI + validation
+
+2. **Production:**
+   - Push para main → Deploy simulation
+   - Merge PR → Production simulation
+
+## Troubleshooting
+
+### Problemas Comuns
+**Falha no Cache do npm**
+```bash
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Falha no Docker Build**
+```bash
+docker system prune -a
+docker-compose build --no-cache
+```
+
+**Falha nos Testes**
+- Verificar logs completos no workflow execution
+- Baixar artefatos para analise detalhada
+- Rodar testes localmente com act
+
+## Manutencao
 
 # Atualizacao de Dependencias
 - Backend: pip install --upgrade -r requirements.txt
@@ -135,3 +297,10 @@ Tabela users com as seguintes colunas:
 - Logs do servidor Flask mostram operacoes da base de dados
 - Testes de seguranca podem ser executados regularmente
 - Rate limiting ajuda a prevenir abusos
+- GitHub Actions fornecem monitoramento automatizado dos pipelines
+- Artefatos de deployment permitem analise post-mortem
+
+# Atualizacao de Workflows
+- Revisar versoes das Actions regularmente
+- Atualizar versoes de Node.js/Python quando necessario
+- Manter documentacao em dia
