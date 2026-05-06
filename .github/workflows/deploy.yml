@@ -19,19 +19,19 @@ jobs:
     - name: 🐳 Build Docker Compose services
       run: |
         echo "::group::Building all services with Docker Compose"
-        docker-compose build --no-cache
+        docker compose build --no-cache
         echo "::endgroup::"
         
     - name: 🚀 Simulate deployment startup
       run: |
         echo "::group::Starting services for deployment simulation"
-        docker-compose up -d
+        docker compose up -d
         
         echo "Waiting for services to be healthy..."
         sleep 60
         
         echo "Checking service status..."
-        docker-compose ps
+        docker compose ps
         echo "::endgroup::"
         
     - name: 🔍 Health check simulation
@@ -93,18 +93,18 @@ jobs:
         
         ## Services Status
         \`\`\`
-        $(docker-compose ps)
+        $(docker compose ps)
         \`\`\`
         
         ## Container Logs
         ### Backend
         \`\`\`
-        $(docker-compose logs --tail=50 backend)
+        $(docker compose logs --tail=50 backend)
         \`\`\`
         
         ### Frontend
         \`\`\`
-        $(docker-compose logs --tail=50 frontend)
+        $(docker compose logs --tail=50 frontend)
         \`\`\`
         
         ## Health Check Results
@@ -127,7 +127,7 @@ jobs:
       if: always()
       run: |
         echo "::group::Cleaning up deployment simulation"
-        docker-compose down --volumes --remove-orphans
+        docker compose down --volumes --remove-orphans
         docker system prune -f
         echo "::endgroup::"
 
