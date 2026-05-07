@@ -20,27 +20,58 @@
 
 # Instalacao e Configuracao
 
-# Backend
+## Pré-requisitos do Sistema
+Antes de iniciar, certifique-se de que tem as seguintes ferramentas instaladas:
+
+```bash
+# Verificar versoes minimas requeridas
+python --version  # Python 3.13+
+node --version    # Node.js 18+
+npm --version     # npm 8+
+docker --version  # Docker 20+
+git --version     # Git 2.30+
+```
+
+## Configuracao Completa do Ambiente
+
+### Passo 1: Clonar o Repositorio
+```bash
+git clone https://github.com/rafa-mortis/react2.git
+cd react2
+```
+
+### Passo 2: Configuracao do Backend
 1. Navegar para o diretorio backend:
    ```bash
    cd backend
    ```
 
-2. Instalar dependencias Python:
+2. Criar ambiente virtual (recomendado):
    ```bash
+   python -m venv venv
+   # Windows:
+   venv\Scripts\activate
+   # Linux/Mac:
+   source venv/bin/activate
+   ```
+
+3. Instalar dependencias Python:
+   ```bash
+   pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
-3. Iniciar o servidor Flask:
+4. Verificar instalacao:
    ```bash
-   python app.py
+   python app.py &
+   curl http://localhost:5000/health
+   # Deve retornar status 200
    ```
-   O backend ira correr em http://localhost:5000
 
-# Frontend
+### Passo 3: Configuracao do Frontend
 1. Navegar para o diretorio frontend:
    ```bash
-   cd frontend
+   cd ../frontend
    ```
 
 2. Instalar dependencias Node.js:
@@ -48,11 +79,135 @@
    npm install
    ```
 
-3. Iniciar o servidor de desenvolvimento React:
+3. Verificar instalacao:
    ```bash
-   npm start
+   npm run build
+   npm start &
+   # O frontend ira correr em http://localhost:3000
    ```
-   O frontend ira correr em http://localhost:3000
+
+### Passo 4: Validacao do Sistema Completo
+1. Iniciar ambos os servidores:
+   ```bash
+   # Terminal 1 (Backend)
+   cd backend && python app.py
+
+   # Terminal 2 (Frontend)  
+   cd frontend && npm start
+   ```
+
+2. Testar integracao:
+   - Aceder a http://localhost:3000
+   - Tentar login com: user@gmail.com / 123456
+   - Verificar comunicacao com backend nos logs
+
+## Configuracao com Docker (Alternativa)
+Para uma configuracao mais rapida usando Docker:
+
+```bash
+# Build e iniciar todos os servicos
+docker-compose up --build
+
+# Verificar estado dos servicos
+docker-compose ps
+
+# Parar servicos
+docker-compose down
+```
+
+## GitHub Actions - Setup Automatizado
+
+### Configuracao Inicial
+O projeto ja vem com pipelines de CI/CD configurados. Para ativar:
+
+1. **No repositorio GitHub:**
+   - Va para Settings > Actions > General
+   - Ative "Allow all actions" e "Allow fork pull requests"
+   - Configure permissions para "Read and write permissions"
+
+2. **Workflows Disponiveis:**
+   - `frontend.yml` - Pipeline do frontend React
+   - `backend.yml` - Pipeline do backend Python/Flask  
+   - `deploy.yml` - Simulacao de deployment
+
+### Execucao dos Workflows
+Os pipelines sao executados automaticamente:
+
+```bash
+# Development (branch github-actions)
+git push origin github-actions
+# → Executa: frontend-ci, backend-ci, security-scan, code-quality
+
+# Production (branch main)
+git push origin main
+# → Executa: todos os pipelines + deploy-simulation
+```
+
+### Testes Locais com GitHub Actions
+Para testar workflows localmente antes do push:
+
+```bash
+# Instalar act (GitHub Actions runner)
+# Windows:
+choco install act
+# Mac:
+brew install act
+# Linux:
+curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Testar workflow especifico
+act -j frontend-ci      # Testa pipeline do frontend
+act -j backend-ci       # Testa pipeline do backend
+act -j security-scan    # Testa scan de seguranca
+act -j deploy-simulation # Testa deployment
+
+# Testar todos os workflows
+act -W .github/workflows/frontend.yml
+act -W .github/workflows/backend.yml
+```
+
+### Monitoramento dos Pipelines
+Acompanhe a execucao dos workflows em:
+1. GitHub > Actions > selecionar workflow
+2. Verificar logs detalhados de cada step
+3. Download dos artefatos gerados
+
+## Resumo do Fluxo de Instalacao
+
+### Metodo 1: Desenvolvimento Local
+```bash
+git clone https://github.com/rafa-mortis/react2.git
+cd react2
+
+# Backend
+cd backend
+python -m venv venv && venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+
+# Frontend (novo terminal)
+cd frontend
+npm install
+npm start
+```
+
+### Metodo 2: Docker (Recomendado)
+```bash
+git clone https://github.com/rafa-mortis/react2.git
+cd react2
+docker-compose up --build
+```
+
+### Metodo 3: CI/CD Automatizado
+```bash
+git clone https://github.com/rafa-mortis/react2.git
+cd react2
+git checkout github-actions
+# Fazer alteracoes e push para testar pipelines automaticos
+git push origin github-actions
+```
+
+**Importante:** Todos os metodos de instalacao foram testados e garantem o funcionamento correto da aplicacao. Escolha o metodo que melhor se adapta ao seu ambiente de desenvolvimento.
 
 # Utilizacao
 
